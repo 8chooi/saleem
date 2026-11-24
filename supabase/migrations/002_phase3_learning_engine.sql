@@ -101,15 +101,15 @@ ALTER TABLE quiz_questions    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE learning_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE child_points      ENABLE ROW LEVEL SECURITY;
 
--- subjects & lessons & quiz_questions: قراءة عامة (authenticated)
+-- subjects & lessons & quiz_questions: قراءة عامة (anon + authenticated)
 CREATE POLICY subjects_read ON subjects
-  FOR SELECT TO authenticated USING (is_active = TRUE);
+  FOR SELECT TO anon, authenticated USING (is_active = TRUE);
 
 CREATE POLICY lessons_read ON lessons
-  FOR SELECT TO authenticated USING (is_active = TRUE);
+  FOR SELECT TO anon, authenticated USING (is_active = TRUE);
 
 CREATE POLICY quiz_read ON quiz_questions
-  FOR SELECT TO authenticated USING (TRUE);
+  FOR SELECT TO anon, authenticated USING (TRUE);
 
 -- learning_progress: الوالد يرى/يعدّل تقدم أطفاله فقط
 CREATE POLICY progress_select ON learning_progress
