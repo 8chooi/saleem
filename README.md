@@ -32,7 +32,7 @@ Phase 1 ⏳ — Foundation & Design System (التالية)
 | Web | Next.js 14 + TypeScript |
 | Mobile | React Native + Expo |
 | Database | PostgreSQL (Supabase Free) |
-| Hosting | Cloudflare Pages |
+| Hosting | Vercel (saleem-88-f0f6.vercel.app) |
 | Auth | Supabase Auth |
 
 ## الوثائق
