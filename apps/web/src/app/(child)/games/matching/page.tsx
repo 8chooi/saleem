@@ -14,7 +14,7 @@ export default async function MatchingGamePage({
 
   const { data: children } = await supabase
     .from('child_profiles')
-    .select('id, name, age')
+    .select('id, name')
     .eq('parent_id', user.id)
     .order('created_at')
 

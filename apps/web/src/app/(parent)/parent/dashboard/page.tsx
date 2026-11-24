@@ -21,7 +21,7 @@ export default async function ParentDashboard() {
 
   const { data: children } = await supabase
     .from('child_profiles')
-    .select('id, name, age, avatar_emoji')
+    .select('id, name, birth_year, avatar_emoji')
     .eq('parent_id', user.id)
     .order('created_at')
 
@@ -41,7 +41,10 @@ export default async function ParentDashboard() {
     ])
 
     childrenData.push({
-      ...child,
+      id: child.id,
+      name: child.name,
+      avatar_emoji: child.avatar_emoji,
+      age: new Date().getFullYear() - child.birth_year,
       total_points: points?.total_points || 0,
       completed_lessons: completedLessons || 0,
       read_stories: readStories || 0,

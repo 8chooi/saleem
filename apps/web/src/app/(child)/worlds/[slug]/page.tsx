@@ -45,7 +45,7 @@ export default async function WorldPage({ params, searchParams }: Props) {
   if (searchParams.child) {
     const { data: child } = await supabase
       .from('child_profiles')
-      .select('id, name, emoji')
+      .select('id, name, emoji:avatar_emoji')
       .eq('id', searchParams.child)
       .eq('parent_id', user.id)
       .single()
@@ -194,7 +194,7 @@ async function ChildSelector({
 }) {
   const { data: children = [] } = await supabase
     .from('child_profiles')
-    .select('id, name, emoji')
+    .select('id, name, emoji:avatar_emoji')
     .eq('parent_id', parentId)
     .order('created_at')
 

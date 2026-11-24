@@ -28,7 +28,7 @@ export default async function StoriesPage({
 
   const { data: children } = await supabase
     .from('child_profiles')
-    .select('id, name, age')
+    .select('id, name')
     .eq('parent_id', user.id)
     .order('created_at')
 
@@ -79,7 +79,7 @@ export default async function StoriesPage({
         {/* Child Selector */}
         {children && children.length > 1 && (
           <div className="mb-6 flex gap-2 flex-wrap">
-            {children.map((child: { id: string; name: string; age: number }) => (
+            {children.map((child: { id: string; name: string }) => (
               <Link
                 key={child.id}
                 href={`/stories?child=${child.id}${ageFilter ? `&age=${ageFilter}` : ''}`}

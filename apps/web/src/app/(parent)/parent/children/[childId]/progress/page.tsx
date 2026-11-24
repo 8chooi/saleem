@@ -19,7 +19,7 @@ export default async function ChildProgressPage({ params }: Props) {
 
   const { data: child } = await supabase
     .from('child_profiles')
-    .select('id, name, emoji, age_group')
+    .select('id, name, emoji:avatar_emoji, age_group')
     .eq('id', params.childId)
     .eq('parent_id', user.id)
     .single()
