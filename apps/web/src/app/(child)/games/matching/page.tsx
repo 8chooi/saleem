@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import MatchingGame from './MatchingGame'
 
-export const runtime = 'edge'
 
 export default async function MatchingGamePage({
   searchParams,

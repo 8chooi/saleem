@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 
-export const runtime = 'edge'
 import StoryReader from './StoryReader'
 
 export default async function StoryPage({

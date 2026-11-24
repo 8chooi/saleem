@@ -2,7 +2,6 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 
-export const runtime = 'edge'
 import type { Lesson, LearningProgress, Subject } from '@/lib/learning/types'
 
 export const dynamic = 'force-dynamic'
