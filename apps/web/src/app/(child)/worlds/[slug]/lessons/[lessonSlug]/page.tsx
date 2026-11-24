@@ -1,6 +1,8 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+
+export const runtime = 'edge'
 import LessonClient from './LessonClient'
 import type { Lesson, Subject, QuizQuestion, LearningProgress } from '@/lib/learning/types'
 
