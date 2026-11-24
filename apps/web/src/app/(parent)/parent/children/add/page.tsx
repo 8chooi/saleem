@@ -1,7 +1,7 @@
 'use client'
 
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -17,6 +17,10 @@ export default function AddChildPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [welcome, setWelcome] = useState(false)
+  useEffect(() => {
+    setWelcome(new URLSearchParams(window.location.search).has('welcome'))
+  }, [])
   const [form, setForm] = useState({
     name: '',
     birth_year: String(currentYear - 6),
@@ -49,7 +53,7 @@ export default function AddChildPage() {
 
     const ageGroup = getAgeGroup(year)
 
-    const { error: insertError } = await supabase
+    const { data: created, error: insertError } = await supabase
       .from('child_profiles')
       .insert({
         parent_id: user.id,
@@ -59,27 +63,51 @@ export default function AddChildPage() {
         avatar_emoji: form.avatar_emoji,
         pin_hash: form.pin || null,
       })
+      .select('id')
+      .single()
 
     setLoading(false)
 
-    if (insertError) {
+    if (insertError || !created) {
       setError('حدث خطأ أثناء الحفظ. حاول مجدداً.')
       return
     }
 
-    router.push('/parent')
+    router.push(welcome ? `/kids/${created.id}` : '/parent')
     router.refresh()
   }
 
   return (
     <div className="max-w-lg mx-auto">
-      <div className="mb-6">
-        <Link href="/parent" className="text-sm text-gray-500 hover:text-primary transition-colors">
-          ← العودة
-        </Link>
-        <h1 className="text-2xl font-black text-gray-900 mt-2">إضافة طفل</h1>
-        <p className="text-gray-500 text-sm mt-1">أضف ملف طفلك لمتابعة تقدّمه</p>
-      </div>
+      {welcome ? (
+        <div className="mb-6 text-center">
+          <ol className="flex items-center justify-center gap-2 mb-6 text-xs font-bold">
+            {['حسابك', 'طفلك الأول', 'ابدأ التعلّم'].map((step, i) => (
+              <li key={step} className="flex items-center gap-2">
+                <span
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    i === 0 ? 'bg-green-500 text-white' : i === 1 ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
+                  }`}
+                >
+                  {i === 0 ? '✓' : i + 1}
+                </span>
+                <span className={i === 1 ? 'text-gray-900' : 'text-gray-400'}>{step}</span>
+                {i < 2 && <span className="w-6 h-0.5 bg-gray-200" />}
+              </li>
+            ))}
+          </ol>
+          <h1 className="text-2xl font-black text-gray-900">لنضف طفلك الأول 🧒</h1>
+          <p className="text-gray-500 text-sm mt-1">يمكنك إضافة باقي الأطفال لاحقًا من لوحة التحكم</p>
+        </div>
+      ) : (
+        <div className="mb-6">
+          <Link href="/parent" className="text-sm text-gray-500 hover:text-primary transition-colors">
+            ← العودة
+          </Link>
+          <h1 className="text-2xl font-black text-gray-900 mt-2">إضافة طفل</h1>
+          <p className="text-gray-500 text-sm mt-1">أضف ملف طفلك لمتابعة تقدّمه</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -140,8 +168,9 @@ export default function AddChildPage() {
           )}
 
           <Button type="submit" fullWidth size="lg" loading={loading}>
-            حفظ الملف
+            {welcome ? 'ابدأ التعلّم 🚀' : 'حفظ الملف'}
           </Button>
+          <p className="text-xs text-gray-400 text-center">🔒 بيانات طفلك محمية، ولا تظهر لأي مستخدم آخر.</p>
         </form>
       </div>
     </div>

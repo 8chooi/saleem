@@ -54,7 +54,7 @@ export default async function BadgesPage({
       {/* Header */}
       <div className="bg-white border-b border-indigo-100 shadow-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href={selectedChildId ? `/worlds/letters?child=${selectedChildId}` : '/'} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+          <Link href={selectedChildId ? `/kids/${selectedChildId}` : '/parent'} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
             ← العوالم
           </Link>
           <h1 className="text-xl font-bold text-indigo-800">🏅 شاراتي</h1>

@@ -71,8 +71,8 @@ export default async function StoriesPage({
       {/* Header */}
       <div className="bg-white border-b border-purple-100 shadow-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href={selectedChildId ? `/worlds/letters?child=${selectedChildId}` : '/'} className="text-purple-600 hover:text-purple-800 text-sm font-medium">
-            ← العوالم
+          <Link href={selectedChildId ? `/kids/${selectedChildId}` : '/parent'} className="text-purple-600 hover:text-purple-800 text-sm font-medium">
+            ← عالمي
           </Link>
           <h1 className="text-xl font-bold text-purple-800">📚 مكتبة القصص</h1>
           <span className="text-sm text-gray-500">{stories?.length || 0} قصة</span>

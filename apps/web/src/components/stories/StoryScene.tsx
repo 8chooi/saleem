@@ -11,7 +11,7 @@ const BACKGROUNDS: Record<SceneBg, { sky: string; ground?: string; groundHeight?
   village: { sky: 'linear-gradient(#bfdbfe, #eff6ff)', ground: 'linear-gradient(#fde68a, #f59e0b)', groundHeight: '28%', deco: [{ e: '🏠', x: 10, y: 60, size: 70 }, { e: '🏡', x: 88, y: 60, size: 70 }, { e: '☁️', x: 50, y: 12, size: 54, drift: true }] },
   desert: { sky: 'linear-gradient(#fed7aa, #fff7ed)', ground: 'linear-gradient(#fcd34d, #d97706)', groundHeight: '34%', deco: [{ e: '☀️', x: 82, y: 14, size: 70 }, { e: '🌵', x: 12, y: 58, size: 70 }, { e: '🐪', x: 86, y: 64, size: 60 }] },
   mountain: { sky: 'linear-gradient(#e0e7ff, #f8fafc)', ground: 'linear-gradient(#a3a3a3, #57534e)', groundHeight: '22%', deco: [{ e: '⛰️', x: 20, y: 52, size: 130 }, { e: '🏔️', x: 80, y: 48, size: 140 }, { e: '☁️', x: 48, y: 14, size: 50, drift: true }] },
-  home: { sky: 'linear-gradient(#fef3c7, #fffbeb)', ground: 'linear-gradient(#d6a77a, #a16207)', groundHeight: '26%', deco: [{ e: '🪟', x: 82, y: 26, size: 64 }, { e: '🖼️', x: 18, y: 24, size: 50 }] },
+  home: { sky: 'linear-gradient(#fef3c7, #fffbeb)', ground: 'linear-gradient(#d6a77a, #a16207)', groundHeight: '26%', deco: [{ e: '🕰️', x: 82, y: 26, size: 56 }, { e: '🖼️', x: 18, y: 24, size: 50 }] },
   sky: { sky: 'linear-gradient(#7dd3fc, #e0f2fe)', deco: [{ e: '☁️', x: 16, y: 20, size: 64, drift: true }, { e: '☁️', x: 78, y: 70, size: 72, drift: true }, { e: '☀️', x: 86, y: 14, size: 56 }] },
   garden: { sky: 'linear-gradient(#bae6fd, #f0f9ff)', ground: 'linear-gradient(#4ade80, #16a34a)', groundHeight: '30%', deco: [{ e: '🌷', x: 8, y: 78, size: 40 }, { e: '🌼', x: 20, y: 84, size: 36 }, { e: '🌻', x: 92, y: 70, size: 56 }, { e: '🦋', x: 70, y: 22, size: 32, drift: true }] },
 }

@@ -19,6 +19,8 @@ export default async function ParentDashboard() {
     .select('*')
     .order('created_at', { ascending: true })
 
+  if (!children || children.length === 0) redirect('/parent/children/add?welcome=1')
+
   const worlds = [
     { slug: 'letters',    icon: '🌙', label: 'الحروف',   color: 'bg-orange-100 text-orange-600' },
     { slug: 'numbers',   icon: '🔢', label: 'الأعداد',  color: 'bg-green-100 text-green-600' },
@@ -41,6 +43,25 @@ export default async function ParentDashboard() {
           <p className="text-gray-500 text-sm mt-0.5">مرحباً بك في لوحة التحكم</p>
         </div>
       </div>
+
+      <section className="rounded-3xl bg-gradient-to-l from-sky-500 to-indigo-600 p-6 text-white shadow-lg">
+        <h2 className="text-2xl font-black mb-1">من سيتعلّم الآن؟</h2>
+        <p className="text-white/80 text-sm mb-5">اختر الطفل لتفتح له عالمه</p>
+        <div className="flex flex-wrap gap-4">
+          {children.map((child: { id: string; name: string; avatar_emoji?: string }) => (
+            <Link
+              key={child.id}
+              href={`/kids/${child.id}`}
+              className="flex flex-col items-center gap-2 bg-white/15 hover:bg-white/25 rounded-3xl px-6 py-4 transition-all hover:scale-105"
+            >
+              <span className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-4xl shadow">
+                {child.avatar_emoji ?? '🧒'}
+              </span>
+              <span className="font-black">{child.name}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* Children section */}
       <section>
@@ -74,7 +95,7 @@ export default async function ParentDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {children.map((child: { id: string; name: string; birth_year: number; avatar_emoji?: string; emoji?: string }) => (
               <div key={child.id} className="space-y-2">
-                <Link href={`/worlds/letters?child=${child.id}`}>
+                <Link href={`/kids/${child.id}`}>
                   <Card variant="interactive" className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-2xl bg-primary-light flex items-center justify-center text-2xl">
                       {child.emoji ?? child.avatar_emoji ?? '🧒'}

@@ -73,8 +73,8 @@ export default async function WorldPage({ params, searchParams }: Props) {
         className="py-10 px-4 text-white text-center"
         style={{ background: `linear-gradient(135deg, ${subject.color}dd, ${subject.color}99)` }}
       >
-        <Link href="/parent" className="text-white/70 text-sm mb-4 inline-block hover:text-white">
-          ← لوحة التحكم
+        <Link href={selectedChild ? `/kids/${selectedChild.id}` : '/parent'} className="text-white/70 text-sm mb-4 inline-block hover:text-white">
+          ← رجوع
         </Link>
         <div className="text-6xl mb-3">{subject.emoji}</div>
         <h1 className="text-3xl font-black">{subject.name_ar}</h1>
