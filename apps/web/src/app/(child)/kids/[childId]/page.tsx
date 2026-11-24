@@ -123,6 +123,17 @@ export default async function KidHomePage({ params }: { params: { childId: strin
           )}
         </section>
 
+        <Link
+          href={`/library${q}`}
+          className="flex items-center gap-4 rounded-3xl bg-gradient-to-l from-emerald-500 to-teal-600 text-white p-5 shadow-md hover:scale-[1.01] transition-transform"
+        >
+          <span className="text-5xl">🌍</span>
+          <span>
+            <span className="block text-xl font-black">المكتبة المفتوحة</span>
+            <span className="block text-sm text-white/85">مئات القصص العربية المصوّرة من كل العالم</span>
+          </span>
+        </Link>
+
         <section>
           <h2 className="text-xl font-black text-gray-900 mb-3">عوالم التعلّم</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
