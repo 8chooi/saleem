@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 
 import StoryReader from './StoryReader'
+import { levelInfo } from '@/lib/stories/pages'
 
 export default async function StoryPage({
   params,
@@ -55,17 +56,14 @@ export default async function StoryPage({
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* Story Header */}
-        <div className="text-center mb-8">
-          <div className="text-7xl mb-4">{story.cover_emoji}</div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">{story.title_ar}</h1>
-          <p className="text-gray-500">{story.summary_ar}</p>
-          <div className="mt-3 inline-block bg-amber-100 text-amber-700 text-sm px-3 py-1 rounded-full">
-            {story.age_group === '3-5' ? '٣–٥ سنوات' :
-             story.age_group === '6-8' ? '٦–٨ سنوات' :
-             story.age_group === '9-12' ? '٩–١٢ سنة' : 'جميع الأعمار'}
-          </div>
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <div className="text-center mb-5">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            {story.cover_emoji} {story.title_ar}
+          </h1>
+          <span className={`inline-block text-sm px-3 py-1 rounded-full ${levelInfo(story.level).color}`}>
+            المستوى {story.level}: {levelInfo(story.level).label}
+          </span>
         </div>
 
         {/* Story Content */}

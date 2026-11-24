@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { LEVELS, levelInfo } from '@/lib/stories/pages'
 
 
 interface Story {
@@ -11,6 +12,7 @@ interface Story {
   cover_emoji: string
   age_group: string
   read_time_min: number
+  level: number
 }
 
 interface StoryRead {
@@ -20,7 +22,7 @@ interface StoryRead {
 export default async function StoriesPage({
   searchParams,
 }: {
-  searchParams: { child?: string; age?: string }
+  searchParams: { child?: string; level?: string }
 }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -33,16 +35,17 @@ export default async function StoriesPage({
     .order('created_at')
 
   const selectedChildId = searchParams.child || children?.[0]?.id
-  const ageFilter = searchParams.age
+  const levelFilter = Number(searchParams.level) || 0
 
   let storiesQuery = supabase
     .from('stories')
-    .select('id, slug, title_ar, summary_ar, cover_emoji, age_group, read_time_min')
+    .select('id, slug, title_ar, summary_ar, cover_emoji, age_group, read_time_min, level')
     .eq('is_active', true)
+    .order('level')
     .order('sort_order')
 
-  if (ageFilter) {
-    storiesQuery = storiesQuery.eq('age_group', ageFilter)
+  if (levelFilter) {
+    storiesQuery = storiesQuery.eq('level', levelFilter)
   }
 
   const { data: stories } = await storiesQuery
@@ -55,12 +58,13 @@ export default async function StoriesPage({
 
   const readStoryIds = new Set((storyReads || []).map((r: StoryRead) => r.story_id))
 
-  const ageGroups = [
-    { value: '', label: 'الكل' },
-    { value: '3-5', label: '٣–٥ سنوات' },
-    { value: '6-8', label: '٦–٨ سنوات' },
-    { value: '9-12', label: '٩–١٢ سنة' },
-  ]
+  const levelHref = (level: number) => {
+    const q = new URLSearchParams()
+    if (selectedChildId) q.set('child', selectedChildId)
+    if (level) q.set('level', String(level))
+    const qs = q.toString()
+    return `/stories${qs ? `?${qs}` : ''}`
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white" dir="rtl">
@@ -82,7 +86,7 @@ export default async function StoriesPage({
             {children.map((child: { id: string; name: string }) => (
               <Link
                 key={child.id}
-                href={`/stories?child=${child.id}${ageFilter ? `&age=${ageFilter}` : ''}`}
+                href={`/stories?child=${child.id}${levelFilter ? `&level=${levelFilter}` : ''}`}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   selectedChildId === child.id
                     ? 'bg-purple-600 text-white'
@@ -95,19 +99,19 @@ export default async function StoriesPage({
           </div>
         )}
 
-        {/* Age Filter */}
+        {/* Level Filter */}
         <div className="mb-6 flex gap-2 flex-wrap">
-          {ageGroups.map((ag) => (
+          {[{ value: 0, label: 'كل المستويات' }, ...LEVELS].map((lv) => (
             <Link
-              key={ag.value}
-              href={`/stories${selectedChildId ? `?child=${selectedChildId}` : '?'}${ag.value ? `${selectedChildId ? '&' : ''}age=${ag.value}` : ''}`}
+              key={lv.value}
+              href={levelHref(lv.value)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                (ageFilter || '') === ag.value
+                levelFilter === lv.value
                   ? 'bg-purple-600 text-white'
                   : 'bg-white border border-purple-200 text-purple-700 hover:bg-purple-50'
               }`}
             >
-              {ag.label}
+              {lv.value ? `المستوى ${lv.value}: ${lv.label}` : lv.label}
             </Link>
           ))}
         </div>
@@ -139,10 +143,8 @@ export default async function StoriesPage({
                       </div>
                       <p className="text-sm text-gray-500 mb-3 line-clamp-2">{story.summary_ar}</p>
                       <div className="flex items-center gap-3 text-xs text-gray-400">
-                        <span className="bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full">
-                          {story.age_group === '3-5' ? '٣–٥ سنوات' :
-                           story.age_group === '6-8' ? '٦–٨ سنوات' :
-                           story.age_group === '9-12' ? '٩–١٢ سنة' : 'الكل'}
+                        <span className={`px-2 py-0.5 rounded-full ${levelInfo(story.level).color}`}>
+                          المستوى {story.level}: {levelInfo(story.level).label}
                         </span>
                         <span>⏱ {story.read_time_min} دقائق</span>
                         {isRead && <span className="text-green-500 font-medium">تمت القراءة</span>}
