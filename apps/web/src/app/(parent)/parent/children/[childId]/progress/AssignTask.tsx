@@ -75,10 +75,11 @@ export default function AssignTask({
           </button>
         ))}
       </div>
+      <div className="flex gap-2 mb-2">
       <select
         value={itemId}
         onChange={(e) => setItemId(e.target.value)}
-        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 mb-2 bg-white"
+        className="flex-1 min-w-0 rounded-xl border border-gray-200 px-3 py-2.5 bg-white"
         aria-label={kind === 'story' ? 'اختر قصة' : 'اختر درسًا'}
       >
         <option value="">{kind === 'story' ? 'اختر قصة…' : 'اختر درسًا…'}</option>
@@ -86,6 +87,20 @@ export default function AssignTask({
           <option key={o.id} value={o.id}>{o.title}</option>
         ))}
       </select>
+      <button
+        type="button"
+        onClick={() => {
+          const taken = new Set(assignments.map((a) => a.title))
+          const pool = options.filter((o) => !taken.has(o.title))
+          const pick = (pool.length ? pool : options)[Math.floor(Math.random() * (pool.length || options.length))]
+          if (pick) setItemId(pick.id)
+        }}
+        className="shrink-0 rounded-xl bg-amber-100 text-amber-800 font-bold px-3 text-sm"
+        title="اختيار عشوائي لم يُسند من قبل"
+      >
+        ✨ ألهمني
+      </button>
+      </div>
       <input
         value={note}
         onChange={(e) => setNote(e.target.value)}
