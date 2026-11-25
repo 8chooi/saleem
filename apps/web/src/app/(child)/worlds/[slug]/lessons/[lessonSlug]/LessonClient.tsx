@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Lesson, Subject, QuizQuestion, LearningProgress } from '@/lib/learning/types'
@@ -14,6 +14,8 @@ interface Props {
 }
 
 type Phase = 'reading' | 'quiz' | 'result'
+
+const PASS_SCORE = 60
 
 export default function LessonClient({ lesson, subject, questions, initialProgress, childId }: Props) {
   const router = useRouter()
@@ -30,12 +32,15 @@ export default function LessonClient({ lesson, subject, questions, initialProgre
   const [showExplanation, setShowExplanation] = useState(false)
   const [saving, setSaving] = useState(false)
   const [finalScore, setFinalScore] = useState(initialProgress?.score ?? 0)
+  const [alreadyPassed, setAlreadyPassed] = useState(initialProgress?.status === 'completed')
+  const [earned, setEarned] = useState(0)
+  const attemptsRef = useRef(initialProgress?.attempts ?? 0)
 
   const q = questions[currentQ]
   const isLastQ = currentQ === questions.length - 1
 
   async function startLesson() {
-    if (!childId) { setPhase('quiz'); return }
+    if (!childId || alreadyPassed) { setPhase(questions.length > 0 ? 'quiz' : 'result'); return }
     await supabase.from('learning_progress').upsert({
       child_id: childId,
       lesson_id: lesson.id,
@@ -68,28 +73,38 @@ export default function LessonClient({ lesson, subject, questions, initialProgre
     setSaving(true)
     const correct = answers.filter((a, i) => a === questions[i]?.correct_idx).length
     const score = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 100
-    const pointsEarned = score >= 60 ? lesson.points : Math.floor(lesson.points * score / 100)
+    // الدرس لا يُحسب مكتملًا إلا بإتقان 60% على الأقل، والنقاط تُمنح مرة واحدة عند أول نجاح
+    const passed = score >= PASS_SCORE
+    const firstPass = passed && !alreadyPassed
+    const pointsEarned = firstPass ? lesson.points : 0
 
     setFinalScore(score)
+    setEarned(pointsEarned)
 
     if (childId) {
-      await supabase.from('learning_progress').upsert({
-        child_id: childId,
-        lesson_id: lesson.id,
-        status: 'completed',
-        score,
-        points_earned: pointsEarned,
-        completed_at: new Date().toISOString(),
-        attempts: (initialProgress?.attempts ?? 0) + 1,
-      }, { onConflict: 'child_id,lesson_id' })
+      const attempts = attemptsRef.current + 1
+      attemptsRef.current = attempts
+      await supabase.from('learning_progress').upsert(
+        alreadyPassed
+          ? { child_id: childId, lesson_id: lesson.id, attempts }
+          : {
+              child_id: childId,
+              lesson_id: lesson.id,
+              status: passed ? 'completed' : 'in_progress',
+              score,
+              points_earned: pointsEarned,
+              completed_at: passed ? new Date().toISOString() : null,
+              attempts,
+            },
+        { onConflict: 'child_id,lesson_id' },
+      )
 
-      // تحديث النقاط الإجمالية
-      try {
-        await supabase.rpc('increment_child_points', {
-          p_child_id: childId,
-          p_points: pointsEarned,
-        })
-      } catch {}
+      if (firstPass) {
+        setAlreadyPassed(true)
+        try {
+          await supabase.rpc('increment_child_points', { p_child_id: childId, p_points: pointsEarned })
+        } catch {}
+      }
     }
 
     setSaving(false)
@@ -203,7 +218,7 @@ export default function LessonClient({ lesson, subject, questions, initialProgre
   // ══════════════════════════════════════════
   // Phase: result
   // ══════════════════════════════════════════
-  const passed = finalScore >= 60
+  const passed = finalScore >= PASS_SCORE
   const correctCount = answers.filter((a, i) => a === questions[i]?.correct_idx).length
 
   return (
@@ -227,12 +242,18 @@ export default function LessonClient({ lesson, subject, questions, initialProgre
           {finalScore}%
         </div>
 
-        {passed && (
+        {passed && earned > 0 && (
           <div className="bg-yellow-50 rounded-2xl p-4 mb-6 inline-block">
-            <p className="text-yellow-800 font-bold">
-              🎁 كسبت {lesson.points} نقطة!
-            </p>
+            <p className="text-yellow-800 font-bold">🎁 كسبت {earned} نقطة، وأتممت الدرس!</p>
           </div>
+        )}
+        {passed && earned === 0 && (
+          <p className="text-green-700 font-bold mb-6">✓ أتقنت هذا الدرس. المراجعة تقوّي ذاكرتك.</p>
+        )}
+        {!passed && (
+          <p className="text-gray-700 mb-6">
+            تحتاج {PASS_SCORE}٪ على الأقل لإتمام الدرس. راجع الشرح وحاول مرة أخرى.
+          </p>
         )}
 
         <div className="flex gap-3 justify-center flex-wrap">

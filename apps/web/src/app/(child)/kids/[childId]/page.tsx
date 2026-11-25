@@ -11,6 +11,19 @@ export async function generateMetadata() {
 
 type Band = '3-5' | '6-8' | '9-12'
 const LEVEL_BY_AGE: Record<Band, number> = { '3-5': 1, '6-8': 2, '9-12': 3 }
+const WEEKLY_GOALS: Record<Band, { stories: number; lessons: number; games: number }> = {
+  '3-5': { stories: 2, lessons: 1, games: 2 },
+  '6-8': { stories: 3, lessons: 2, games: 2 },
+  '9-12': { stories: 3, lessons: 3, games: 2 },
+}
+
+// الأسبوع يبدأ يوم السبت
+function weekStart() {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - ((d.getDay() + 1) % 7))
+  return d.toISOString()
+}
 
 interface Lesson {
   id: string
@@ -37,7 +50,8 @@ export default async function KidHomePage({ params }: { params: { childId: strin
   const band = (child.age_group as Band) ?? '6-8'
   const level = LEVEL_BY_AGE[band] ?? 1
 
-  const [{ data: points }, { data: badges }, { data: reads }, { data: stories }, { data: lessons }, { data: progress }, { data: tasks }] =
+  const since = weekStart()
+  const [{ data: points }, { data: badges }, { data: reads }, { data: stories }, { data: lessons }, { data: progress }, { data: tasks }, { count: weekGames }] =
     await Promise.all([
       supabase.from('child_points').select('total_points').eq('child_id', child.id).single(),
       supabase
@@ -46,7 +60,7 @@ export default async function KidHomePage({ params }: { params: { childId: strin
         .eq('child_id', child.id)
         .order('earned_at', { ascending: false })
         .limit(4),
-      supabase.from('story_reads').select('story_id').eq('child_id', child.id),
+      supabase.from('story_reads').select('story_id, read_at').eq('child_id', child.id),
       supabase
         .from('stories')
         .select('id, slug, title_ar, cover_emoji, level')
@@ -70,6 +84,7 @@ export default async function KidHomePage({ params }: { params: { childId: strin
         .is('completed_at', null)
         .order('created_at', { ascending: false })
         .limit(3),
+      supabase.from('game_sessions').select('*', { count: 'exact', head: true }).eq('child_id', child.id).gte('played_at', since).gte('score', 60),
     ])
 
   const q = `?child=${child.id}`
@@ -133,6 +148,48 @@ export default async function KidHomePage({ params }: { params: { childId: strin
           </Link>
         )
       })}
+    </section>
+  )
+
+  const goals = WEEKLY_GOALS[band] ?? WEEKLY_GOALS['6-8']
+  const weekDone = {
+    stories: (reads ?? []).filter((r: { read_at: string }) => r.read_at >= since).length,
+    lessons: (progress ?? []).filter((p) => p.status === 'completed' && p.completed_at && p.completed_at >= since).length,
+    games: weekGames ?? 0,
+  }
+  const rows = [
+    { key: 'stories' as const, icon: '📖', label: 'قصص', href: `/stories${q}` },
+    { key: 'lessons' as const, icon: '🎓', label: 'دروس أتقنتها', href: continueLesson ? lessonHref(continueLesson) : `/worlds/letters${q}` },
+    { key: 'games' as const, icon: '🎮', label: 'ألعاب بنتيجة ٦٠٪ فأكثر', href: `/games${q}` },
+  ]
+  const weekComplete = rows.every((r) => weekDone[r.key] >= goals[r.key])
+
+  const WeeklyChallenge = (
+    <section className={`rounded-3xl p-5 shadow-sm border-2 ${weekComplete ? 'bg-green-50 border-green-300' : 'bg-white border-amber-100'}`}>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-black text-gray-900">{weekComplete ? '🏆 أنجزت تحدّي الأسبوع!' : '⭐ تحدّي الأسبوع'}</h2>
+        <span className="text-xs text-gray-500">يتجدّد كل سبت</span>
+      </div>
+      <div className="space-y-3">
+        {rows.map((r) => {
+          const done = Math.min(weekDone[r.key], goals[r.key])
+          const full = done >= goals[r.key]
+          return (
+            <Link key={r.key} href={r.href} className="flex items-center gap-3">
+              <span className="text-2xl w-8 text-center">{full ? '✅' : r.icon}</span>
+              <span className="flex-1">
+                <span className="flex justify-between text-sm font-bold text-gray-700 mb-1">
+                  <span>{r.label}</span>
+                  <span>{done} / {goals[r.key]}</span>
+                </span>
+                <span className="block h-3 rounded-full bg-gray-100 overflow-hidden">
+                  <span className={`block h-full rounded-full ${full ? 'bg-green-500' : 'bg-amber-400'}`} style={{ width: `${(done / goals[r.key]) * 100}%` }} />
+                </span>
+              </span>
+            </Link>
+          )
+        })}
+      </div>
     </section>
   )
 
@@ -291,6 +348,7 @@ export default async function KidHomePage({ params }: { params: { childId: strin
           <>
             {ActivitiesGrid}
             {StoriesRow}
+            {WeeklyChallenge}
             {ContinueCard}
             {Achievements}
           </>
@@ -299,6 +357,7 @@ export default async function KidHomePage({ params }: { params: { childId: strin
           <>
             {ContinueCard}
             {ActivitiesGrid}
+            {WeeklyChallenge}
             {StoriesRow}
             {WorldsGrid}
             {Achievements}
@@ -308,6 +367,7 @@ export default async function KidHomePage({ params }: { params: { childId: strin
           <>
             {ContinueCard}
             {ChallengeCard}
+            {WeeklyChallenge}
             {WorldsGrid}
             {ActivitiesGrid}
             {StoriesRow}

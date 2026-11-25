@@ -3,11 +3,11 @@ import Link from 'next/link'
 export const metadata = { title: 'الألعاب | سَلِيم' }
 
 const GAMES = [
-  { href: '/games/letters', icon: 'أ ب', title: 'أين الحرف؟', desc: 'اختر الصورة التي تبدأ بالحرف', ages: '٣–٨', color: 'from-sky-400 to-sky-600' },
-  { href: '/games/counting', icon: '١٢٣', title: 'عُدّ معي', desc: 'عُدّ الأشياء واختر الرقم الصحيح', ages: '٣–٦', color: 'from-green-400 to-green-600' },
-  { href: '/games/math', icon: '+ −', title: 'حساب سريع', desc: 'اجمع واطرح واختر الناتج الصحيح', ages: '٦–١٠', color: 'from-orange-400 to-orange-600' },
-  { href: '/games/opposites', icon: '⇄', title: 'الأضداد', desc: 'اختر الكلمة التي تعني العكس', ages: '٦–١٢', color: 'from-violet-400 to-violet-600' },
-  { href: '/games/matching', icon: '🃏', title: 'لعبة المطابقة', desc: 'اقلب البطاقات وطابق كل حرف مع صورته', ages: '٥–١٢', color: 'from-purple-400 to-purple-600' },
+  { href: '/games/letters', goal: 'يربط شكل الحرف بأول صوت في الكلمة', icon: 'أ ب', title: 'أين الحرف؟', desc: 'اختر الصورة التي تبدأ بالحرف', ages: '٣–٨', color: 'from-sky-400 to-sky-600' },
+  { href: '/games/counting', goal: 'يعدّ الأشياء حتى ١٠ ويقرأ الأرقام', icon: '١٢٣', title: 'عُدّ معي', desc: 'عُدّ الأشياء واختر الرقم الصحيح', ages: '٣–٦', color: 'from-green-400 to-green-600' },
+  { href: '/games/math', goal: 'يجمع ويطرح أعدادًا حتى ٢٠ ذهنيًا', icon: '+ −', title: 'حساب سريع', desc: 'اجمع واطرح واختر الناتج الصحيح', ages: '٦–١٠', color: 'from-orange-400 to-orange-600' },
+  { href: '/games/opposites', goal: 'يوسّع مفرداته بمعرفة الكلمة وعكسها', icon: '⇄', title: 'الأضداد', desc: 'اختر الكلمة التي تعني العكس', ages: '٦–١٢', color: 'from-violet-400 to-violet-600' },
+  { href: '/games/matching', goal: 'يقوّي الذاكرة ويطابق الحرف مع صورته', icon: '🃏', title: 'لعبة المطابقة', desc: 'اقلب البطاقات وطابق كل حرف مع صورته', ages: '٥–١٢', color: 'from-purple-400 to-purple-600' },
 ]
 
 export default function GamesHub({ searchParams }: { searchParams: { child?: string } }) {
@@ -32,6 +32,7 @@ export default function GamesHub({ searchParams }: { searchParams: { child?: str
               <div className="text-5xl mb-2 font-black leading-none h-14 flex items-center">{g.icon}</div>
               <p className="text-xl font-black">{g.title}</p>
               <p className="text-sm text-white/85 mt-1">{g.desc}</p>
+              <p className="text-xs text-white mt-2 bg-white/15 rounded-lg px-2 py-1">🎯 {g.goal}</p>
               <span className="inline-block mt-3 text-xs bg-white/20 rounded-full px-2 py-0.5">الأعمار {g.ages}</span>
             </Link>
           ))}

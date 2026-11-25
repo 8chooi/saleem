@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { saveGameSession } from '@/lib/games/save'
 import Link from 'next/link'
 
 interface Card {
@@ -60,18 +60,8 @@ export default function MatchingGame({ childId, subject }: MatchingGameProps) {
   const saveSession = useCallback(async () => {
     if (!childId || saved) return
     setSaved(true)
-    const duration = Math.round((Date.now() - startTime) / 1000)
     const score = Math.max(0, 100 - (moves - totalPairs) * 5)
-    const supabase = createClient()
-    await supabase.from('game_sessions').insert({
-      child_id: childId,
-      game_type: 'matching',
-      subject_slug: subject,
-      score,
-      max_score: 100,
-      duration_sec: duration,
-    })
-    await supabase.rpc('increment_child_points', { p_child_id: childId, p_points: Math.round(score / 10) })
+    await saveGameSession({ childId, gameType: 'matching', subject, score, startedAt: startTime })
   }, [childId, saved, moves, startTime, subject, totalPairs])
 
   useEffect(() => {
