@@ -5,7 +5,7 @@ import ToggleActive from './ToggleActive'
 export default async function AdminHome() {
   const supabase = createClient()
   const [{ data: stories }, { data: lessons }] = await Promise.all([
-    supabase.from('stories').select('id, title_ar, level, is_active, pages').order('level').order('sort_order'),
+    supabase.from('stories').select('id, title_ar, level, is_active, pages, quiz').order('level').order('sort_order'),
     supabase
       .from('lessons')
       .select('id, title_ar, age_group, is_active, subject:subjects(name_ar, emoji), questions:quiz_questions(count)')
@@ -25,6 +25,7 @@ export default async function AdminHome() {
               <span className="text-xs bg-gray-100 rounded-full px-2 py-0.5 shrink-0">م{s.level}</span>
               <span className="flex-1 font-semibold text-gray-800 truncate">{s.title_ar}</span>
               <span className="text-xs text-gray-400 shrink-0">{Array.isArray(s.pages) ? `${s.pages.length} صفحات` : 'بدون صفحات'}</span>
+              {!(Array.isArray(s.quiz) && s.quiz.length) && <span className="text-xs text-red-600 font-bold shrink-0">بلا أسئلة فهم</span>}
               <ToggleActive table="stories" id={s.id} active={s.is_active} />
               <Link href={`/admin/stories/${s.id}`} className="text-sm text-blue-600 font-bold shrink-0">تعديل</Link>
             </div>

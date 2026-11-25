@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import StoryScene from '@/components/stories/StoryScene'
 import type { SceneAnim, SceneBg, SceneItem, StoryPage } from '@/lib/stories/pages'
+import type { QuizItem } from '@/components/stories/StoryQuiz'
 
 const BGS: { value: SceneBg; label: string }[] = [
   { value: 'meadow', label: 'مرج' }, { value: 'garden', label: 'حديقة' }, { value: 'home', label: 'بيت' },
@@ -32,6 +33,7 @@ export interface StoryInput {
   read_time_min: number
   is_active: boolean
   pages: StoryPage[] | null
+  quiz: QuizItem[]
 }
 
 const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -66,6 +68,8 @@ export default function StoryEditor({ initial }: { initial: StoryInput }) {
     }),
   )
   const [preview, setPreview] = useState(0)
+  const [quiz, setQuiz] = useState<QuizItem[]>(initial.quiz)
+  const setQ = (i: number, patch: Partial<QuizItem>) => setQuiz((qs) => qs.map((q, j) => (j === i ? { ...q, ...patch } : q)))
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -76,6 +80,17 @@ export default function StoryEditor({ initial }: { initial: StoryInput }) {
     if (!form.title_ar.trim()) return setMsg('العنوان مطلوب')
     if (!/^[a-z0-9-]{3,60}$/.test(form.slug)) return setMsg('الرابط بالإنجليزية الصغيرة والأرقام والشرطة فقط (3 أحرف على الأقل)')
     if (pages.some((p) => !p.text.trim())) return setMsg('كل صفحة تحتاج نصًا')
+    const cleanQuiz = quiz
+      .filter((q) => q.q.trim())
+      .map((q) => {
+        const options = q.options.map((o) => o.trim())
+        const kept = options.map((o, i) => ({ o, i })).filter((x) => x.o)
+        return { q: q.q.trim(), options: kept.map((x) => x.o), correct: Math.max(0, kept.findIndex((x) => x.i === q.correct)) }
+      })
+    for (const [i, q] of cleanQuiz.entries()) {
+      if (q.options.length < 2) return setMsg(`سؤال الفهم ${i + 1} يحتاج اختيارين على الأقل`)
+      if (!quiz.filter((x) => x.q.trim())[i].options[quiz.filter((x) => x.q.trim())[i].correct]?.trim()) return setMsg(`سؤال الفهم ${i + 1}: الإجابة الصحيحة فارغة`)
+    }
     setBusy(true)
     setMsg('')
     const built = toPages(pages)
@@ -89,6 +104,7 @@ export default function StoryEditor({ initial }: { initial: StoryInput }) {
       read_time_min: form.read_time_min,
       is_active: form.is_active,
       pages: built,
+      quiz: cleanQuiz.length ? cleanQuiz : null,
       content_ar: `<p>${built.map((p) => escape(p.text)).join(' ')}</p>`,
     }
     const supabase = createClient()
@@ -158,6 +174,32 @@ export default function StoryEditor({ initial }: { initial: StoryInput }) {
         <button type="button" onClick={() => { setPages((ps) => [...ps, { text: '', bg: ps[ps.length - 1]?.bg ?? 'meadow', chars: '' }]); setPreview(pages.length) }} className="w-full border-2 border-dashed border-gray-300 rounded-2xl py-3 font-bold text-gray-600">
           + صفحة
         </button>
+
+        <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+          <h2 className="font-black">أسئلة الفهم</h2>
+          <p className="text-xs text-gray-500">لا تُحتسب القصة مقروءة إلا بإجابة 60% منها صحيحة. اختر الدائرة بجوار الإجابة الصحيحة.</p>
+          {quiz.map((q, i) => (
+            <div key={i} className="border border-gray-100 rounded-xl p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sm">سؤال {i + 1}</span>
+                <button type="button" onClick={() => setQuiz((qs) => qs.filter((_, j) => j !== i))} className="text-xs text-red-500 font-bold">حذف</button>
+              </div>
+              <input className={input} value={q.q} onChange={(e) => setQ(i, { q: e.target.value })} placeholder="نص السؤال" />
+              {q.options.map((o, k) => (
+                <label key={k} className="flex items-center gap-2">
+                  <input type="radio" name={`sq-${i}`} checked={q.correct === k} onChange={() => setQ(i, { correct: k })} aria-label="الإجابة الصحيحة" />
+                  <input className={input} value={o} onChange={(e) => setQ(i, { options: q.options.map((x, j) => (j === k ? e.target.value : x)) })} placeholder={`اختيار ${k + 1}`} />
+                </label>
+              ))}
+              {q.options.length < 4 && (
+                <button type="button" onClick={() => setQ(i, { options: [...q.options, ''] })} className="text-xs font-bold text-blue-600">+ اختيار</button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={() => setQuiz((qs) => [...qs, { q: '', options: ['', '', ''], correct: 0 }])} className="w-full border-2 border-dashed border-gray-300 rounded-xl py-2 font-bold text-gray-600 text-sm">
+            + سؤال فهم
+          </button>
+        </div>
       </div>
 
       <div className="lg:sticky lg:top-4 self-start space-y-3">

@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
-import { createClient } from '@/lib/supabase/client'
 import StoryScene from '@/components/stories/StoryScene'
 import ReadAloudRecorder from '@/components/stories/ReadAloudRecorder'
+import StoryQuiz, { type QuizItem } from '@/components/stories/StoryQuiz'
 import { pagesFromContent, type StoryPage } from '@/lib/stories/pages'
 
 interface Story {
@@ -17,6 +17,7 @@ interface Story {
   age_group: string
   level: number | null
   pages: StoryPage[] | null
+  quiz: QuizItem[] | null
 }
 
 interface StoryReaderProps {
@@ -69,7 +70,6 @@ export default function StoryReader({ story, childId, initiallyRead }: StoryRead
   const [watching, setWatching] = useState(false)
   const [wordIdx, setWordIdx] = useState(-1)
   const [isRead, setIsRead] = useState(initiallyRead)
-  const [marking, setMarking] = useState(false)
   const { voice, supported } = useArabicVoice()
 
   const watchingRef = useRef(false)
@@ -87,17 +87,6 @@ export default function StoryReader({ story, childId, initiallyRead }: StoryRead
     return out
   }, [page.text])
 
-  const markAsRead = useCallback(async () => {
-    if (!childId || marking) return
-    setMarking(true)
-    const supabase = createClient()
-    await supabase.from('story_reads').upsert(
-      { child_id: childId, story_id: story.id },
-      { onConflict: 'child_id,story_id', ignoreDuplicates: true },
-    )
-    setIsRead(true)
-    setMarking(false)
-  }, [childId, marking, story.id])
 
   const stopAll = useCallback(() => {
     watchingRef.current = false
@@ -123,7 +112,6 @@ export default function StoryReader({ story, childId, initiallyRead }: StoryRead
         } else {
           watchingRef.current = false
           setWatching(false)
-          if (!isRead) markAsRead()
         }
       }
 
@@ -161,7 +149,7 @@ export default function StoryReader({ story, childId, initiallyRead }: StoryRead
       setSpeaking(true)
       window.speechSynthesis.speak(u)
     },
-    [pages, canSpeak, voice, level, isRead, markAsRead],
+    [pages, canSpeak, voice, level],
   )
 
   useEffect(() => () => clearTimeout(timerRef.current), [])
@@ -272,20 +260,15 @@ export default function StoryReader({ story, childId, initiallyRead }: StoryRead
         </p>
       )}
 
+      {isLast && childId && !isRead && (
+        <StoryQuiz quiz={story.quiz ?? []} storyId={story.id} childId={childId} onPassed={() => setIsRead(true)} />
+      )}
+
       {isLast && (
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          {childId && !isRead && (
-            <button
-              onClick={markAsRead}
-              disabled={marking}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-xl transition-colors disabled:opacity-50"
-            >
-              {marking ? 'جارٍ الحفظ...' : '✅ قرأت هذه القصة'}
-            </button>
-          )}
           {isRead && (
             <div className="text-center bg-green-50 border border-green-200 rounded-xl py-3 px-8">
-              <span className="text-green-600 font-bold">✓ أحسنت! قرأت هذه القصة</span>
+              <span className="text-green-600 font-bold">✓ قرأت هذه القصة وفهمتها</span>
             </div>
           )}
           <Link
