@@ -5,6 +5,8 @@ export const metadata = { title: 'الألعاب | سَلِيم' }
 const GAMES = [
   { href: '/games/letters', icon: 'أ ب', title: 'أين الحرف؟', desc: 'اختر الصورة التي تبدأ بالحرف', ages: '٣–٨', color: 'from-sky-400 to-sky-600' },
   { href: '/games/counting', icon: '١٢٣', title: 'عُدّ معي', desc: 'عُدّ الأشياء واختر الرقم الصحيح', ages: '٣–٦', color: 'from-green-400 to-green-600' },
+  { href: '/games/math', icon: '+ −', title: 'حساب سريع', desc: 'اجمع واطرح واختر الناتج الصحيح', ages: '٦–١٠', color: 'from-orange-400 to-orange-600' },
+  { href: '/games/opposites', icon: '⇄', title: 'الأضداد', desc: 'اختر الكلمة التي تعني العكس', ages: '٦–١٢', color: 'from-violet-400 to-violet-600' },
   { href: '/games/matching', icon: '🃏', title: 'لعبة المطابقة', desc: 'اقلب البطاقات وطابق كل حرف مع صورته', ages: '٥–١٢', color: 'from-purple-400 to-purple-600' },
 ]
 

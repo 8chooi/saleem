@@ -2,14 +2,14 @@ import Link from 'next/link'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 
-const worlds = [
+const worlds: { slug: string; icon: string; label: string; color: string; bg: string; soon?: boolean }[] = [
   { slug: 'letters',    icon: '🌙', label: 'عالَم الحروف',  color: 'from-orange-400 to-amber-500',   bg: 'bg-orange-50' },
   { slug: 'numbers',   icon: '🔢', label: 'عالَم الأعداد', color: 'from-green-400 to-emerald-500',  bg: 'bg-green-50' },
   { slug: 'science',   icon: '🔭', label: 'عالَم العلوم',  color: 'from-blue-400 to-sky-500',       bg: 'bg-blue-50' },
-  { slug: 'languages', icon: '🌍', label: 'عالَم اللغات',  color: 'from-purple-400 to-violet-500',  bg: 'bg-purple-50', soon: true },
-  { slug: 'thinking',  icon: '🧩', label: 'عالَم التفكير', color: 'from-pink-400 to-rose-500',      bg: 'bg-pink-50', soon: true },
-  { slug: 'creativity',icon: '🎨', label: 'عالَم الإبداع', color: 'from-yellow-400 to-orange-400',  bg: 'bg-yellow-50', soon: true },
-  { slug: 'knowledge', icon: '🌟', label: 'عالَم المعرفة', color: 'from-indigo-400 to-blue-500',    bg: 'bg-indigo-50', soon: true },
+  { slug: 'languages', icon: '🌍', label: 'عالَم اللغات',  color: 'from-purple-400 to-violet-500',  bg: 'bg-purple-50' },
+  { slug: 'thinking',  icon: '🧩', label: 'عالَم التفكير', color: 'from-pink-400 to-rose-500',      bg: 'bg-pink-50' },
+  { slug: 'creativity',icon: '🎨', label: 'عالَم الإبداع', color: 'from-yellow-400 to-orange-400',  bg: 'bg-yellow-50' },
+  { slug: 'knowledge', icon: '🌟', label: 'عالَم المعرفة', color: 'from-indigo-400 to-blue-500',    bg: 'bg-indigo-50' },
 ]
 
 const features = [
@@ -67,7 +67,7 @@ export default function HomePage() {
               <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">
                 عوالم التعلّم
               </h2>
-              <p className="text-gray-500 text-lg">ثلاثة عوالم متاحة الآن، والباقي قيد الإعداد</p>
+              <p className="text-gray-500 text-lg">في كل عالم دروس قصيرة بأسئلة، ويزيد المحتوى تدريجيًا</p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
               {worlds.map((w) => {
