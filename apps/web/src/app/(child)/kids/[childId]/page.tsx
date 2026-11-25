@@ -37,7 +37,7 @@ export default async function KidHomePage({ params }: { params: { childId: strin
   const band = (child.age_group as Band) ?? '6-8'
   const level = LEVEL_BY_AGE[band] ?? 1
 
-  const [{ data: points }, { data: badges }, { data: reads }, { data: stories }, { data: lessons }, { data: progress }] =
+  const [{ data: points }, { data: badges }, { data: reads }, { data: stories }, { data: lessons }, { data: progress }, { data: tasks }] =
     await Promise.all([
       supabase.from('child_points').select('total_points').eq('child_id', child.id).single(),
       supabase
@@ -63,6 +63,13 @@ export default async function KidHomePage({ params }: { params: { childId: strin
         .from('learning_progress')
         .select('lesson_id, status, started_at, completed_at')
         .eq('child_id', child.id),
+      supabase
+        .from('child_assignments')
+        .select('id, note, story:stories(slug, title_ar, cover_emoji), lesson:lessons(slug, title_ar, subject:subjects(slug, emoji))')
+        .eq('child_id', child.id)
+        .is('completed_at', null)
+        .order('created_at', { ascending: false })
+        .limit(3),
     ])
 
   const q = `?child=${child.id}`
@@ -103,6 +110,31 @@ export default async function KidHomePage({ params }: { params: { childId: strin
     { href: continueLesson ? lessonHref(continueLesson) : `/worlds/letters${q}`, icon: '🎓', label: 'تعلّم', color: 'from-sky-400 to-sky-600' },
     { href: `/badges${q}`, icon: '🏅', label: 'شاراتي', color: 'from-amber-400 to-amber-600' },
   ]
+
+  const Tasks = (tasks?.length ?? 0) > 0 && (
+    <section className="space-y-2">
+      {(tasks ?? []).map((t) => {
+        const story = t.story as unknown as { slug: string; title_ar: string; cover_emoji: string } | null
+        const lesson = t.lesson as unknown as { slug: string; title_ar: string; subject: { slug: string; emoji: string } | null } | null
+        const href = story ? `/stories/${story.slug}${q}` : `/worlds/${lesson?.subject?.slug}/lessons/${lesson?.slug}${q}`
+        return (
+          <Link
+            key={t.id as string}
+            href={href}
+            className="flex items-center gap-4 rounded-3xl bg-gradient-to-l from-pink-500 to-rose-500 text-white p-4 shadow-md hover:scale-[1.01] transition-transform"
+          >
+            <span className="text-4xl">{story ? story.cover_emoji : lesson?.subject?.emoji}</span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-xs font-bold text-white/85">مهمة من أهلك 💌</span>
+              <span className="block font-black text-lg truncate">{story?.title_ar ?? lesson?.title_ar}</span>
+              {t.note && <span className="block text-sm text-white/90 truncate">«{t.note as string}»</span>}
+            </span>
+            <span className="bg-white text-rose-600 font-bold text-sm px-4 py-2 rounded-xl shrink-0">ابدأ</span>
+          </Link>
+        )
+      })}
+    </section>
+  )
 
   const ContinueCard = continueLesson && (
     <Link
@@ -254,6 +286,7 @@ export default async function KidHomePage({ params }: { params: { childId: strin
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-7">
+        {Tasks}
         {band === '3-5' && (
           <>
             {ActivitiesGrid}

@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import AssignTask from './AssignTask'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +48,50 @@ export default async function ChildProgressPage({ params }: Props) {
     .eq('status', 'completed')
     .order('completed_at', { ascending: false })
 
+  const [{ data: storyList }, { data: lessonList }, { data: assignRows }, { data: reads }, { data: games }] = await Promise.all([
+    supabase.from('stories').select('id, title_ar').eq('is_active', true).order('level').order('sort_order'),
+    supabase.from('lessons').select('id, title_ar, subject:subjects(name_ar)').eq('is_active', true).order('sort_order'),
+    supabase
+      .from('child_assignments')
+      .select('id, note, completed_at, story:stories(title_ar), lesson:lessons(title_ar)')
+      .eq('child_id', child.id)
+      .order('created_at', { ascending: false })
+      .limit(10),
+    supabase.from('story_reads').select('read_at, story:stories(title_ar)').eq('child_id', child.id).order('read_at', { ascending: false }).limit(10),
+    supabase.from('game_sessions').select('played_at, game_type, score').eq('child_id', child.id).order('played_at', { ascending: false }).limit(10),
+  ])
+
+  const GAME_NAMES: Record<string, string> = {
+    matching: 'لعبة المطابقة', letters: 'أين الحرف؟', counting: 'عُدّ معي', math: 'حساب سريع', opposites: 'الأضداد',
+  }
+  type Activity = { at: string; icon: string; text: string }
+  const activity: Activity[] = [
+    ...(progress ?? []).map((p: { completed_at: string; score: number; lesson?: { title_ar: string } }) => ({
+      at: p.completed_at, icon: '🎓', text: `أكمل درس «${p.lesson?.title_ar ?? ''}» بنتيجة ${p.score}%`,
+    })),
+    ...(reads ?? []).map((r) => ({
+      at: r.read_at as string, icon: '📖', text: `قرأ قصة «${(r.story as unknown as { title_ar: string } | null)?.title_ar ?? ''}»`,
+    })),
+    ...(games ?? []).map((g) => ({
+      at: g.played_at as string, icon: '🎮', text: `لعب «${GAME_NAMES[g.game_type] ?? g.game_type}» بنتيجة ${g.score}%`,
+    })),
+  ]
+    .filter((a) => a.at)
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .slice(0, 12)
+
+  const assignments = (assignRows ?? []).map((a) => {
+    const story = a.story as unknown as { title_ar: string } | null
+    const lesson = a.lesson as unknown as { title_ar: string } | null
+    return {
+      id: a.id as string,
+      title: story?.title_ar ?? lesson?.title_ar ?? '',
+      kind: (story ? 'story' : 'lesson') as 'story' | 'lesson',
+      note: a.note as string | null,
+      completed_at: a.completed_at as string | null,
+    }
+  })
+
   const completedCount = (progress ?? []).length
   const totalPoints = pointsRow?.total_points ?? 0
 
@@ -88,6 +133,33 @@ export default async function ChildProgressPage({ params }: Props) {
             <div className="text-3xl font-black text-green-600">{completedCount}</div>
             <div className="text-sm text-gray-500 mt-1">درس مكتمل</div>
           </div>
+        </div>
+
+        <AssignTask
+          childId={child.id}
+          stories={(storyList ?? []).map((s) => ({ id: s.id, title: s.title_ar }))}
+          lessons={(lessonList ?? []).map((l) => ({
+            id: l.id,
+            title: `${(l.subject as unknown as { name_ar: string } | null)?.name_ar ?? ''}: ${l.title_ar}`,
+          }))}
+          assignments={assignments}
+        />
+
+        <div className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+          <h2 className="font-bold text-gray-700 mb-3">آخر النشاطات</h2>
+          {activity.length === 0 ? (
+            <p className="text-sm text-gray-500">لا توجد نشاطات بعد.</p>
+          ) : (
+            <ul className="space-y-2">
+              {activity.map((a, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm">
+                  <span>{a.icon}</span>
+                  <span className="flex-1 text-gray-800">{a.text}</span>
+                  <span className="text-xs text-gray-400 shrink-0">{new Date(a.at).toLocaleDateString('ar-EG')}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* التقدم حسب العالم */}
