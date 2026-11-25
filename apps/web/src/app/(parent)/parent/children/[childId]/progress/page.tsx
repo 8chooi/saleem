@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import AssignTask from './AssignTask'
+import Recordings from './Recordings'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,6 +61,26 @@ export default async function ChildProgressPage({ params }: Props) {
     supabase.from('story_reads').select('read_at, story:stories(title_ar)').eq('child_id', child.id).order('read_at', { ascending: false }).limit(10),
     supabase.from('game_sessions').select('played_at, game_type, score').eq('child_id', child.id).order('played_at', { ascending: false }).limit(10),
   ])
+
+  const { data: recRows } = await supabase
+    .from('story_recordings')
+    .select('id, path, duration_sec, created_at, story:stories(title_ar)')
+    .eq('child_id', child.id)
+    .order('created_at', { ascending: false })
+    .limit(20)
+  const recPaths = (recRows ?? []).map((r) => r.path as string)
+  const { data: signed } = recPaths.length
+    ? await supabase.storage.from('recordings').createSignedUrls(recPaths, 3600)
+    : { data: [] as { path: string | null; signedUrl: string }[] }
+  const urlByPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]))
+  const recordings = (recRows ?? []).map((r) => ({
+    id: r.id as string,
+    path: r.path as string,
+    url: urlByPath.get(r.path as string) ?? null,
+    title: (r.story as unknown as { title_ar: string } | null)?.title_ar ?? '',
+    duration: r.duration_sec as number | null,
+    created_at: r.created_at as string,
+  }))
 
   const GAME_NAMES: Record<string, string> = {
     matching: 'لعبة المطابقة', letters: 'أين الحرف؟', counting: 'عُدّ معي', math: 'حساب سريع', opposites: 'الأضداد',
@@ -144,6 +165,8 @@ export default async function ChildProgressPage({ params }: Props) {
           }))}
           assignments={assignments}
         />
+
+        <Recordings items={recordings} childName={child.name} />
 
         <div className="bg-white rounded-2xl p-4 shadow-sm mb-6">
           <h2 className="font-bold text-gray-700 mb-3">آخر النشاطات</h2>

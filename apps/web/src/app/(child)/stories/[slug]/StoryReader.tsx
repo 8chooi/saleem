@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import StoryScene from '@/components/stories/StoryScene'
+import ReadAloudRecorder from '@/components/stories/ReadAloudRecorder'
 import { pagesFromContent, type StoryPage } from '@/lib/stories/pages'
 
 interface Story {
@@ -262,6 +263,8 @@ export default function StoryReader({ story, childId, initiallyRead }: StoryRead
           {watching ? '⏹ إيقاف العرض' : '🎬 شاهد القصة'}
         </button>
       </div>
+
+      {childId && <ReadAloudRecorder childId={childId} storyId={story.id} />}
 
       {!canSpeak && (
         <p className="text-center text-sm text-gray-500 mb-4">
