@@ -39,8 +39,8 @@ export default function AddChildPage() {
 
     const year = parseInt(form.birth_year)
     if (!form.name.trim()) return setError('اسم الطفل مطلوب')
-    if (isNaN(year) || year < currentYear - 15 || year > currentYear - 2) {
-      return setError('سنة الميلاد غير صحيحة')
+    if (isNaN(year) || year < currentYear - 12 || year > currentYear - 3) {
+      return setError('سَلِيم مناسب للأطفال من 3 إلى 12 سنة. تأكد من سنة الميلاد.')
     }
     if (form.pin && (form.pin.length !== 4 || !/^\d+$/.test(form.pin))) {
       return setError('الرقم السري يجب أن يكون 4 أرقام')
@@ -147,8 +147,8 @@ export default function AddChildPage() {
             placeholder={String(currentYear - 6)}
             value={form.birth_year}
             onChange={(e) => update('birth_year', e.target.value)}
-            min={currentYear - 15}
-            max={currentYear - 2}
+            min={currentYear - 12}
+            max={currentYear - 3}
             hint={`الفئة العمرية: ${getAgeGroup(parseInt(form.birth_year)) ?? 'غير محدد'}`}
             required
           />

@@ -80,7 +80,7 @@ export default function RegisterPage() {
         <div className="text-center mb-8">
           <div className="text-5xl mb-3">👋</div>
           <h1 className="text-2xl font-black text-gray-900">إنشاء حساب جديد</h1>
-          <p className="text-gray-500 mt-1 text-sm">مجاني بالكامل — لا بطاقة بنكية</p>
+          <p className="text-gray-500 mt-1 text-sm">التسجيل مجاني حاليًا، بلا بطاقة بنكية</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -101,7 +101,7 @@ function LoginForm() {
         <p className="text-center text-sm text-gray-500 mt-6">
           ليس لديك حساب؟{' '}
           <Link href="/auth/register" className="text-primary font-semibold hover:underline">
-            أنشئ حساباً مجانياً
+            أنشئ حسابًا
           </Link>
         </p>
       </div>
