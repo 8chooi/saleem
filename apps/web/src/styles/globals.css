@@ -36,6 +36,19 @@
 
   --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
   --shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
+
+  /* ── Sprint 1A: Brand + Clay Shadows ── */
+  --color-brand-purple:       #5C4AE4;
+  --color-brand-purple-dark:  #3D2FB0;
+  --color-brand-purple-light: #EEF2FF;
+
+  --shadow-clay-sm:     0 4px 0 0 rgba(0,0,0,0.12);
+  --shadow-clay:        0 6px 0 0 rgba(0,0,0,0.14);
+  --shadow-clay-lg:     0 8px 0 0 rgba(0,0,0,0.16);
+  --shadow-clay-purple: 0 6px 0 0 #3D2FB0;
+  --shadow-clay-gold:   0 6px 0 0 #B45309;
+  --shadow-clay-green:  0 6px 0 0 #065F46;
+  --shadow-clay-blue:   0 6px 0 0 #1E40AF;
 }
 
 /* =====================
@@ -122,6 +135,21 @@ a {
     box-shadow: var(--shadow-hover);
     transform: translateY(-2px);
     transition: all 150ms ease;
+  }
+
+  /* Clay Card Style — Sprint 1A */
+  .clay-card {
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-clay);
+    transition: box-shadow 150ms ease, transform 150ms ease;
+  }
+  .clay-card:hover {
+    box-shadow: var(--shadow-clay-lg);
+    transform: translateY(-2px);
+  }
+  .clay-card:active {
+    box-shadow: var(--shadow-clay-sm);
+    transform: translateY(1px);
   }
 
   /* RTL utilities */
