@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { LogOut, Menu, X, Users, Home, Settings } from 'lucide-react'
+import { LogOut, Menu, X, Users, Home } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar } from '@/components/ui/Avatar'
@@ -39,11 +39,8 @@ export function ParentNav({ user }: ParentNavProps) {
           <Link href="/parent" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:text-primary hover:bg-primary-light transition-all">
             <Home size={16} /> الرئيسية
           </Link>
-          <Link href="/parent/children" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:text-primary hover:bg-primary-light transition-all">
+          <Link href="/parent/dashboard" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:text-primary hover:bg-primary-light transition-all">
             <Users size={16} /> أطفالي
-          </Link>
-          <Link href="/parent/settings" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:text-primary hover:bg-primary-light transition-all">
-            <Settings size={16} /> الإعدادات
           </Link>
         </div>
 
@@ -77,11 +74,8 @@ export function ParentNav({ user }: ParentNavProps) {
           <Link href="/parent" className="flex items-center gap-2 py-2.5 text-sm font-semibold text-gray-700" onClick={() => setOpen(false)}>
             <Home size={16} /> الرئيسية
           </Link>
-          <Link href="/parent/children" className="flex items-center gap-2 py-2.5 text-sm font-semibold text-gray-700" onClick={() => setOpen(false)}>
+          <Link href="/parent/dashboard" className="flex items-center gap-2 py-2.5 text-sm font-semibold text-gray-700" onClick={() => setOpen(false)}>
             <Users size={16} /> أطفالي
-          </Link>
-          <Link href="/parent/settings" className="flex items-center gap-2 py-2.5 text-sm font-semibold text-gray-700" onClick={() => setOpen(false)}>
-            <Settings size={16} /> الإعدادات
           </Link>
           <button onClick={handleSignOut} className="flex items-center gap-2 py-2.5 text-sm font-semibold text-red-500 w-full">
             <LogOut size={16} /> تسجيل الخروج
