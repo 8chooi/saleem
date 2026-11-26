@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 
 interface Page {
@@ -44,6 +44,28 @@ function playTurn() {
   } catch {}
 }
 
+// VTT cue: { start, end } in seconds
+interface VttCue { start: number; end: number; index: number }
+
+function parseVtt(text: string): VttCue[] {
+  const cues: VttCue[] = []
+  const blocks = text.split(/\n\n+/)
+  let index = 0
+  for (const block of blocks) {
+    const lines = block.trim().split('\n')
+    const timeLine = lines.find(l => l.includes('-->'))
+    if (!timeLine) continue
+    const [s, e] = timeLine.split('-->').map(t => {
+      const p = t.trim().replace(',', '.').split(':')
+      if (p.length === 3) return +p[0] * 3600 + +p[1] * 60 + +p[2]
+      return +p[0] * 60 + +p[1]
+    })
+    if (!isNaN(s) && !isNaN(e)) cues.push({ start: s, end: e, index })
+    index++
+  }
+  return cues
+}
+
 export default function LibraryReader({
   book,
   backHref,
@@ -60,8 +82,46 @@ export default function LibraryReader({
   const [current, setCurrent] = useState(0)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [playing, setPlaying] = useState(false)
+  const [audioError, setAudioError] = useState(false)
   const [swipe, setSwipe] = useState<'left' | 'right' | null>(null)
   const touchX = useRef<number | null>(null)
+  const vttCues = useRef<VttCue[]>([])
+  const syncActive = useRef(false)
+
+  // Load VTT for sync
+  useEffect(() => {
+    if (!book.vtt_url) return
+    fetch(book.vtt_url)
+      .then(r => r.text())
+      .then(text => { vttCues.current = parseVtt(text) })
+      .catch(() => {})
+  }, [book.vtt_url])
+
+  // Stop audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.src = ''
+      }
+      window.speechSynthesis?.cancel()
+    }
+  }, [])
+
+  // VTT sync: advance page when audio time passes cue boundary
+  const onTimeUpdate = useCallback(() => {
+    if (!syncActive.current || !audioRef.current) return
+    const t = audioRef.current.currentTime
+    // find which page cue we're in (cue index 0 = page 1, etc.)
+    const cue = vttCues.current.find(c => t >= c.start && t < c.end)
+    if (cue) {
+      const targetPage = cue.index + 1  // pages start at 1 (0 = cover)
+      setCurrent(prev => {
+        if (prev !== targetPage && targetPage <= totalPages) return targetPage
+        return prev
+      })
+    }
+  }, [totalPages])
 
   function readAloud(text: string) {
     if (!text || !('speechSynthesis' in window)) return
@@ -75,8 +135,27 @@ export default function LibraryReader({
 
   function toggleAudio() {
     if (!audioRef.current) return
-    if (playing) { audioRef.current.pause(); setPlaying(false) }
-    else { audioRef.current.play(); setPlaying(true) }
+    if (playing) {
+      audioRef.current.pause()
+      syncActive.current = false
+      setPlaying(false)
+    } else {
+      setAudioError(false)
+      const promise = audioRef.current.play()
+      if (promise !== undefined) {
+        promise
+          .then(() => {
+            setPlaying(true)
+            if (vttCues.current.length > 0) syncActive.current = true
+          })
+          .catch(() => {
+            setPlaying(false)
+            setAudioError(true)
+          })
+      } else {
+        setPlaying(true)
+      }
+    }
   }
 
   function goNext() {
@@ -95,6 +174,35 @@ export default function LibraryReader({
     }
   }
 
+  // Seek audio to matching cue when user manually turns page
+  function seekToPage(pageNum: number) {
+    if (!audioRef.current || !playing || !syncActive.current) return
+    const cue = vttCues.current.find(c => c.index === pageNum - 1)
+    if (cue) audioRef.current.currentTime = cue.start
+  }
+
+  function goNextWithSeek() {
+    if (current < totalPages) {
+      setSwipe('left')
+      setTimeout(() => {
+        setCurrent(c => { seekToPage(c + 1); return c + 1 })
+        setSwipe(null)
+      }, 150)
+      playTurn()
+    }
+  }
+
+  function goPrevWithSeek() {
+    if (current > 0) {
+      setSwipe('right')
+      setTimeout(() => {
+        setCurrent(c => { seekToPage(c - 1); return c - 1 })
+        setSwipe(null)
+      }, 150)
+      playTurn()
+    }
+  }
+
   function onTouchStart(e: React.TouchEvent) {
     touchX.current = e.touches[0].clientX
   }
@@ -103,8 +211,8 @@ export default function LibraryReader({
     if (touchX.current === null) return
     const diff = touchX.current - e.changedTouches[0].clientX
     if (Math.abs(diff) > 50) {
-      if (diff > 0) goNext()
-      else goPrev()
+      if (diff > 0) goNextWithSeek()
+      else goPrevWithSeek()
     }
     touchX.current = null
   }
@@ -200,7 +308,7 @@ export default function LibraryReader({
       {/* Controls */}
       <div className="px-3 py-3 flex items-center justify-between gap-2"
         style={{background:'rgba(255,255,255,0.08)',backdropFilter:'blur(10px)'}}>
-        <button onClick={goPrev} disabled={current === 0}
+        <button onClick={goPrevWithSeek} disabled={current === 0}
           className="text-white font-black px-4 py-3 rounded-2xl disabled:opacity-30 active:scale-95 transition-all text-sm shrink-0"
           style={{background:'rgba(255,255,255,0.15)',boxShadow: current > 0 ? '0 4px 0 rgba(0,0,0,0.3)' : 'none'}}>
           ← سابق
@@ -208,16 +316,26 @@ export default function LibraryReader({
 
         {book.audio_url && (
           <>
-            <audio ref={audioRef} src={book.audio_url} onEnded={() => setPlaying(false)} className="hidden" />
+            <audio
+              ref={audioRef}
+              src={book.audio_url}
+              onEnded={() => { setPlaying(false); syncActive.current = false }}
+              onTimeUpdate={onTimeUpdate}
+              onError={() => { setPlaying(false); setAudioError(true); syncActive.current = false }}
+              className="hidden"
+            />
             <button onClick={toggleAudio}
               className="text-white font-black px-3 py-3 rounded-2xl active:scale-95 transition-all text-xs flex-1 max-w-[140px]"
-              style={{background:'rgba(99,102,241,0.6)',boxShadow:'0 4px 0 rgba(0,0,0,0.3)'}}>
-              {playing ? '⏸ إيقاف' : '▶ صوت'}
+              style={{
+                background: audioError ? 'rgba(239,68,68,0.5)' : playing ? 'rgba(16,185,129,0.6)' : 'rgba(99,102,241,0.6)',
+                boxShadow:'0 4px 0 rgba(0,0,0,0.3)'
+              }}>
+              {audioError ? '⚠ خطأ' : playing ? '⏸ إيقاف' : '▶ صوت'}
             </button>
           </>
         )}
 
-        <button onClick={goNext} disabled={current >= totalPages || !hasPages}
+        <button onClick={goNextWithSeek} disabled={current >= totalPages || !hasPages}
           className="text-white font-black px-4 py-3 rounded-2xl disabled:opacity-30 active:scale-95 transition-all text-sm shrink-0"
           style={{background:'rgba(255,255,255,0.15)',boxShadow: current < totalPages && hasPages ? '0 4px 0 rgba(0,0,0,0.3)' : 'none'}}>
           تالي →
@@ -230,7 +348,7 @@ export default function LibraryReader({
           <button onClick={() => setCurrent(0)}
             className={`rounded-full transition-all ${current === 0 ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/30'}`} />
           {storyPages.map((_, i) => (
-            <button key={i} onClick={() => { setCurrent(i + 1); playTurn() }}
+            <button key={i} onClick={() => { setCurrent(i + 1); playTurn(); seekToPage(i + 1) }}
               className={`rounded-full transition-all ${current === i + 1 ? 'w-5 h-2 bg-indigo-400' : 'w-2 h-2 bg-white/30'}`} />
           ))}
         </div>
