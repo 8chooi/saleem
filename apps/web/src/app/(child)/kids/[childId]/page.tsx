@@ -132,7 +132,7 @@ export default async function KidHomePage({ params }: { params: { childId: strin
       tasks={(tasks ?? []) as unknown as Parameters<typeof KidDashboard>[0]['tasks']}
       picked={(picked as unknown as Parameters<typeof KidDashboard>[0]['picked'])}
       badges={(badges ?? []) as unknown as Parameters<typeof KidDashboard>[0]['badges']}
-      worlds={Array.from(worldsMap.values())}
+      worlds={Array.from(worldsMap.values()).filter(w => w.total > 0)}
       continueLesson={continueLesson ?? null}
       challenge={challenge ?? null}
       inProgressId={inProgress?.lesson_id ?? null}

@@ -19,6 +19,7 @@ interface Book {
   level: number | null
   credits: string[]
   cover_path: string | null
+  audio_url: string | null
 }
 
 const LEVEL_COLORS: Record<number, { bg: string; text: string; label: string }> = {
@@ -44,7 +45,7 @@ export default async function OpenLibraryPage({
 
   let query = supabase
     .from('open_library')
-    .select('sw_id, slug, title, level, credits, cover_path', { count: 'exact' })
+    .select('sw_id, slug, title, level, credits, cover_path, audio_url', { count: 'exact' })
     .order('level', { nullsFirst: false })
     .order('sw_id')
     .range((page - 1) * PER_PAGE, page * PER_PAGE - 1)
@@ -134,12 +135,20 @@ export default async function OpenLibraryPage({
                   </div>
                   <div className="p-3 flex flex-col gap-1.5 flex-1">
                     <p className="font-black text-gray-900 leading-snug line-clamp-2 text-sm">{b.title}</p>
-                    {b.level && (
-                      <span className="self-start text-[11px] font-black px-2 py-0.5 rounded-full"
-                        style={{background:lc.bg,color:lc.text}}>
-                        {lc.label}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {b.level && (
+                        <span className="text-[11px] font-black px-2 py-0.5 rounded-full"
+                          style={{background:lc.bg,color:lc.text}}>
+                          {lc.label}
+                        </span>
+                      )}
+                      {b.audio_url && (
+                        <span className="text-[11px] font-black px-2 py-0.5 rounded-full"
+                          style={{background:'#dcfce7',color:'#166534'}}>
+                          🔊 صوت
+                        </span>
+                      )}
+                    </div>
                     <div className="mt-auto pt-1">
                       <span className="block w-full text-center text-white text-sm font-black py-2 rounded-xl"
                         style={{background:'#7c3aed',boxShadow:'0 3px 0 #5b21b6'}}>

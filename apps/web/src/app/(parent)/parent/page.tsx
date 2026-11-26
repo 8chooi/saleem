@@ -28,13 +28,31 @@ export default async function ParentDashboard() {
         { data: lastRead },
         { data: lastGame },
         { data: lastLesson },
+        { data: activityDays },
       ] = await Promise.all([
         supabase.from('child_points').select('total_points').eq('child_id', child.id).single(),
         supabase.from('learning_progress').select('*', { count: 'exact', head: true }).eq('child_id', child.id).eq('status', 'completed'),
         supabase.from('story_reads').select('read_at, story:stories(title_ar, cover_emoji)').eq('child_id', child.id).order('read_at', { ascending: false }).limit(1),
         supabase.from('game_sessions').select('played_at, game_type, score').eq('child_id', child.id).order('played_at', { ascending: false }).limit(1),
         supabase.from('learning_progress').select('completed_at, lesson:lessons(title_ar, subject:subjects(emoji))').eq('child_id', child.id).eq('status', 'completed').order('completed_at', { ascending: false }).limit(1),
+        supabase.from('story_reads').select('read_at').eq('child_id', child.id).order('read_at', { ascending: false }).limit(60),
       ])
+
+      // احسب الـ streak: كم يوم متتالي فيه نشاط
+      const streak = (() => {
+        const days = new Set((activityDays ?? []).map((r: { read_at: string }) =>
+          new Date(r.read_at).toISOString().slice(0, 10)
+        ))
+        let count = 0
+        const today = new Date()
+        for (let i = 0; i < 60; i++) {
+          const d = new Date(today)
+          d.setDate(d.getDate() - i)
+          if (days.has(d.toISOString().slice(0, 10))) count++
+          else if (i > 0) break
+        }
+        return count
+      })()
 
       const GAME_NAMES: Record<string, string> = {
         words: 'رتّب الكلمات', matching: 'المطابقة', letters: 'أين الحرف؟',
@@ -67,6 +85,7 @@ export default async function ParentDashboard() {
         points: pts?.total_points ?? 0,
         lessons: lessons ?? 0,
         lastActivity: acts[0] ?? null,
+        streak,
       }
     })
   )
@@ -143,9 +162,11 @@ export default async function ParentDashboard() {
                   <h3 className="font-black text-lg text-gray-900">{child.name}</h3>
                   <p className="text-sm text-gray-500">العمر: {child.age} سنوات</p>
                 </div>
-                <div className="text-right">
-                  <div className="font-black text-xl text-amber-500">⭐ {child.points}</div>
-                  <div className="text-xs text-gray-400">نقطة</div>
+                <div className="text-right flex flex-col gap-1">
+                  <div className="font-black text-lg text-amber-500">⭐ {child.points}</div>
+                  {child.streak > 0 && (
+                    <div className="font-black text-sm text-orange-500">🔥 {child.streak} يوم</div>
+                  )}
                 </div>
               </div>
 
