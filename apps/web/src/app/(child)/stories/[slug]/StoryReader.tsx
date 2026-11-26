@@ -75,6 +75,7 @@ export default function StoryReader({ story, childId, initiallyRead }: StoryRead
 
   const watchingRef = useRef(false)
   const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const page = pages[pageIdx]
   const isLast = pageIdx === pages.length - 1
@@ -93,6 +94,12 @@ export default function StoryReader({ story, childId, initiallyRead }: StoryRead
     watchingRef.current = false
     setWatching(false)
     clearTimeout(timerRef.current)
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.onended = null
+      audioRef.current.onerror = null
+      audioRef.current = null
+    }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel()
     setSpeaking(false)
     setWordIdx(-1)
@@ -116,6 +123,31 @@ export default function StoryReader({ story, childId, initiallyRead }: StoryRead
         }
       }
 
+      // إذا الصفحة عندها صوت MP3 جاهز، شغّله مباشرة
+      if (p.audio) {
+        if (audioRef.current) {
+          audioRef.current.pause()
+          audioRef.current = null
+        }
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+        setSpeaking(true)
+        setWordIdx(-1)
+        const audio = new Audio(p.audio)
+        audioRef.current = audio
+        audio.onended = onDone
+        audio.onerror = () => {
+          audioRef.current = null
+          onDone()
+        }
+        audio.play().catch(() => {
+          audioRef.current = null
+          setSpeaking(false)
+          onDone()
+        })
+        return
+      }
+
+      // Fallback: Web Speech API
       if (!canSpeak) {
         if (watchingRef.current) {
           const wordsCount = p.text.split(/\s+/).length
@@ -153,7 +185,13 @@ export default function StoryReader({ story, childId, initiallyRead }: StoryRead
     [pages, canSpeak, voice, level],
   )
 
-  useEffect(() => () => clearTimeout(timerRef.current), [])
+  useEffect(() => () => {
+    clearTimeout(timerRef.current)
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
+    }
+  }, [])
 
   const goTo = (idx: number) => {
     stopAll()
