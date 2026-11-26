@@ -19,6 +19,7 @@ export interface Scene {
 export interface StoryPage {
   text: string
   scene: Scene
+  audio?: string  // URL لملف MP3 مولّد بـ edge-tts
 }
 
 export const LEVELS = [
