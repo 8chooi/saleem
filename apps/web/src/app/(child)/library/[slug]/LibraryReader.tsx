@@ -112,19 +112,11 @@ export default function LibraryReader({
               {book.credits.length > 0 && (
                 <p className="text-gray-300 text-sm">{creditLine(book.credits)}</p>
               )}
-              <p className="text-gray-500 text-xs mt-2">CC BY 4.0 · StoryWeaver / Pratham Books</p>
+              <p className="text-gray-500 text-xs mt-2">CC BY 4.0 · Pratham Books</p>
             </div>
             {!hasPages && (
-              <div className="mt-4 bg-amber-900/40 rounded-xl p-4 text-center">
-                <p className="text-amber-200 text-sm">صفحات القصة بتُحمَّل تدريجيًا</p>
-                <a
-                  href={`https://storyweaver.org.in/en/stories/${book.sw_id}-${book.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-2 text-sky-400 text-sm underline"
-                >
-                  اقرأ على StoryWeaver
-                </a>
+              <div className="mt-4 bg-gray-800/60 rounded-xl p-4 text-center">
+                <p className="text-gray-400 text-sm">صفحات القصة قريباً</p>
               </div>
             )}
           </div>

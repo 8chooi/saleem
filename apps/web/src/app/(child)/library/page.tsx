@@ -129,21 +129,12 @@ export default async function OpenLibraryPage({
                     <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-3" dir="auto">
                       {creditLine(b.credits)}
                     </p>
-                    <div className="mt-auto flex gap-2 pt-1">
+                    <div className="mt-auto pt-1">
                       <a
                         href={readerHref}
-                        className="flex-1 text-center bg-emerald-600 text-white text-sm font-bold py-2 rounded-xl"
+                        className="block w-full text-center bg-emerald-600 text-white text-sm font-bold py-2 rounded-xl"
                       >
                         اقرأ
-                      </a>
-                      <a
-                        href={swSource}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 text-center border border-emerald-300 text-emerald-700 text-sm font-bold py-2 rounded-xl"
-                        title="التحميل من صفحة القصة الأصلية"
-                      >
-                        تحميل
                       </a>
                     </div>
                   </div>
