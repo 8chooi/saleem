@@ -16,16 +16,18 @@ export default async function StoryPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: story } = await supabase
-    .from('stories')
-    .select('*')
-    .eq('slug', params.slug)
-    .eq('is_active', true)
-    .single()
+  const selectedChildId = searchParams.child
+
+  const [{ data: story }] = await Promise.all([
+    supabase
+      .from('stories')
+      .select('*')
+      .eq('slug', params.slug)
+      .eq('is_active', true)
+      .single(),
+  ])
 
   if (!story) notFound()
-
-  const selectedChildId = searchParams.child
 
   let isRead = false
   if (selectedChildId) {

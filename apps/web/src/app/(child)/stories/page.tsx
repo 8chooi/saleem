@@ -28,21 +28,23 @@ export default async function StoriesPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: children } = await supabase
-    .from('child_profiles')
-    .select('id, name')
-    .eq('parent_id', user.id)
-    .order('created_at')
-
-  const selectedChildId = searchParams.child || children?.[0]?.id
   const levelFilter = Number(searchParams.level) || 0
 
-  const { data: allStories } = await supabase
-    .from('stories')
-    .select('id, slug, title_ar, summary_ar, cover_emoji, age_group, read_time_min, level, quiz')
-    .eq('is_active', true)
-    .order('level')
-    .order('sort_order')
+  const [{ data: children }, { data: allStories }] = await Promise.all([
+    supabase
+      .from('child_profiles')
+      .select('id, name')
+      .eq('parent_id', user.id)
+      .order('created_at'),
+    supabase
+      .from('stories')
+      .select('id, slug, title_ar, summary_ar, cover_emoji, age_group, read_time_min, level, quiz')
+      .eq('is_active', true)
+      .order('level')
+      .order('sort_order'),
+  ])
+
+  const selectedChildId = searchParams.child || children?.[0]?.id
 
   const { data: storyReads } = selectedChildId
     ? await supabase
