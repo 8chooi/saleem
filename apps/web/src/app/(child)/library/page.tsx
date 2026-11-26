@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { levelInfo, LEVELS } from '@/lib/stories/pages'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'المكتبة المفتوحة | سَلِيم' }
+export const metadata = { title: 'المكتبة | سَلِيم' }
 
 const PER_PAGE = 48
 const COVER = (path: string) => {
@@ -21,9 +21,12 @@ interface Book {
   cover_path: string | null
 }
 
-function creditLine(credits: string[]) {
-  if (credits.length === 3) return `تأليف: ${credits[0]} · رسم: ${credits[1]} · ترجمة: ${credits[2]}`
-  return credits.join(' · ')
+const LEVEL_COLORS: Record<number, { bg: string; text: string; label: string }> = {
+  1: { bg: '#bbf7d0', text: '#166534', label: 'المستوى ١' },
+  2: { bg: '#bfdbfe', text: '#1e40af', label: 'المستوى ٢' },
+  3: { bg: '#fde68a', text: '#92400e', label: 'المستوى ٣' },
+  4: { bg: '#fecaca', text: '#991b1b', label: 'المستوى ٤' },
+  5: { bg: '#e9d5ff', text: '#6b21a8', label: 'المستوى ٥' },
 }
 
 export default async function OpenLibraryPage({
@@ -61,84 +64,90 @@ export default async function OpenLibraryPage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white" dir="rtl">
-      <div className="bg-white border-b shadow-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-          <Link
-            href={searchParams.child ? `/kids/${searchParams.child}` : '/parent'}
-            className="text-emerald-700 text-sm font-medium"
-          >
-            ← رجوع
-          </Link>
-          <h1 className="text-xl font-black text-emerald-800">🌍 المكتبة المفتوحة</h1>
-          <span className="text-sm text-gray-500">{total} قصة</span>
-        </div>
+    <div className="min-h-screen" dir="rtl"
+      style={{background:'linear-gradient(160deg,#f5f0ff 0%,#fdf4ff 40%,#f0f9ff 100%)'}}>
+
+      {/* Header */}
+      <div className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between gap-3"
+        style={{background:'rgba(255,255,255,0.85)',backdropFilter:'blur(12px)',boxShadow:'0 2px 20px rgba(124,58,237,0.1)'}}>
+        <Link
+          href={searchParams.child ? `/kids/${searchParams.child}` : '/parent'}
+          className="text-purple-600 font-black text-sm px-3 py-2 rounded-xl"
+          style={{background:'rgba(124,58,237,0.1)'}}>
+          ← رجوع
+        </Link>
+        <h1 className="text-lg font-black text-purple-900">🌍 مكتبة القصص</h1>
+        <span className="text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-xl">{total} قصة</span>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-6">
-        <form action="/library" className="flex gap-2 mb-4">
+      <div className="max-w-5xl mx-auto px-4 py-5">
+        {/* Search */}
+        <form action="/library" className="flex gap-2 mb-5">
           {searchParams.child && <input type="hidden" name="child" value={searchParams.child} />}
           {level > 0 && <input type="hidden" name="level" value={level} />}
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="ابحث باسم القصة"
-            className="flex-1 rounded-xl border border-emerald-200 px-4 py-2.5 bg-white"
+          <input name="q" defaultValue={q} placeholder="🔍 ابحث عن قصة..."
+            className="flex-1 rounded-2xl border-2 border-purple-100 px-4 py-3 bg-white font-bold text-gray-800 focus:outline-none focus:border-purple-400"
           />
-          <button className="bg-emerald-600 text-white font-bold px-5 rounded-xl">بحث</button>
+          <button className="text-white font-black px-5 rounded-2xl"
+            style={{background:'#7c3aed',boxShadow:'0 4px 0 #5b21b6'}}>
+            بحث
+          </button>
         </form>
 
-        <div className="mb-6 flex gap-2 flex-wrap">
-          {[{ value: 0, label: 'كل المستويات' }, ...LEVELS].map((lv) => (
-            <Link
-              key={lv.value}
-              href={href({ level: lv.value || undefined })}
-              className={`px-4 py-2 rounded-full text-sm font-medium ${
-                level === lv.value ? 'bg-emerald-600 text-white' : 'bg-white border border-emerald-200 text-emerald-700'
-              }`}
-            >
+        {/* Level filters */}
+        <div className="mb-5 flex gap-2 flex-wrap">
+          {[{ value: 0, label: 'الكل' }, ...LEVELS].map((lv) => (
+            <Link key={lv.value} href={href({ level: lv.value || undefined })}
+              className="px-4 py-2 rounded-2xl text-sm font-black transition-all"
+              style={level === lv.value
+                ? {background:'#7c3aed',color:'white',boxShadow:'0 4px 0 #5b21b6'}
+                : {background:'white',color:'#7c3aed',border:'2px solid #e9d5ff'}}>
               {lv.value ? `المستوى ${lv.value}` : lv.label}
             </Link>
           ))}
         </div>
 
         {!books?.length ? (
-          <p className="text-center text-gray-500 py-16">لا توجد قصص مطابقة.</p>
+          <div className="text-center py-16">
+            <p className="text-6xl mb-4">🔍</p>
+            <p className="text-gray-500 font-bold">لا توجد قصص مطابقة</p>
+          </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {books.map((b: Book) => {
               const readerHref = `/library/${b.slug}${searchParams.child ? `?child=${searchParams.child}` : ''}`
-              const swSource = `https://storyweaver.org.in/en/stories/${b.sw_id}-${b.slug}`
+              const lvl = b.level ?? 1
+              const lc = LEVEL_COLORS[lvl] ?? LEVEL_COLORS[1]
               return (
-                <div key={b.sw_id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-                  <a href={readerHref} className="block aspect-square bg-emerald-50">
+                <a key={b.sw_id} href={readerHref}
+                  className="bg-white rounded-3xl overflow-hidden flex flex-col cursor-pointer active:scale-95 transition-transform"
+                  style={{boxShadow:'0 5px 0 #e9d5ff',border:'2px solid #f3e8ff'}}>
+                  <div className="aspect-square overflow-hidden"
+                    style={{background:'linear-gradient(135deg,#f5f3ff,#ede9fe)'}}>
                     {b.cover_path ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={COVER(b.cover_path)} alt={b.title} loading="lazy" className="w-full h-full object-cover" />
+                      <img src={COVER(b.cover_path)} alt={b.title} loading="lazy"
+                        className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-5xl">📖</div>
                     )}
-                  </a>
+                  </div>
                   <div className="p-3 flex flex-col gap-1.5 flex-1">
-                    <p className="font-bold text-gray-900 leading-snug line-clamp-2">{b.title}</p>
+                    <p className="font-black text-gray-900 leading-snug line-clamp-2 text-sm">{b.title}</p>
                     {b.level && (
-                      <span className={`self-start text-[11px] px-2 py-0.5 rounded-full ${levelInfo(b.level).color}`}>
-                        المستوى {b.level}
+                      <span className="self-start text-[11px] font-black px-2 py-0.5 rounded-full"
+                        style={{background:lc.bg,color:lc.text}}>
+                        {lc.label}
                       </span>
                     )}
-                    <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-3" dir="auto">
-                      {creditLine(b.credits)}
-                    </p>
                     <div className="mt-auto pt-1">
-                      <a
-                        href={readerHref}
-                        className="block w-full text-center bg-emerald-600 text-white text-sm font-bold py-2 rounded-xl"
-                      >
+                      <span className="block w-full text-center text-white text-sm font-black py-2 rounded-xl"
+                        style={{background:'#7c3aed',boxShadow:'0 3px 0 #5b21b6'}}>
                         اقرأ
-                      </a>
+                      </span>
                     </div>
                   </div>
-                </div>
+                </a>
               )
             })}
           </div>
@@ -147,23 +156,31 @@ export default async function OpenLibraryPage({
         {pages > 1 && (
           <div className="flex items-center justify-center gap-3 mt-8">
             {page > 1 && (
-              <Link href={href({ page: page - 1 })} className="px-4 py-2 rounded-xl bg-white border font-bold">→ السابق</Link>
+              <Link href={href({ page: page - 1 })}
+                className="px-5 py-2.5 rounded-2xl bg-white font-black text-purple-700"
+                style={{border:'2px solid #e9d5ff',boxShadow:'0 3px 0 #e9d5ff'}}>
+                → السابق
+              </Link>
             )}
-            <span className="text-sm text-gray-600">صفحة {page} من {pages}</span>
+            <span className="text-sm font-bold text-gray-600 bg-white px-4 py-2.5 rounded-2xl"
+              style={{border:'2px solid #e9d5ff'}}>
+              {page} / {pages}
+            </span>
             {page < pages && (
-              <Link href={href({ page: page + 1 })} className="px-4 py-2 rounded-xl bg-white border font-bold">التالي ←</Link>
+              <Link href={href({ page: page + 1 })}
+                className="px-5 py-2.5 rounded-2xl bg-white font-black text-purple-700"
+                style={{border:'2px solid #e9d5ff',boxShadow:'0 3px 0 #e9d5ff'}}>
+                التالي ←
+              </Link>
             )}
           </div>
         )}
 
-        <p className="text-xs text-gray-500 text-center mt-10 leading-relaxed">
-          قصص هذه المكتبة من{' '}
+        <p className="text-xs text-gray-400 text-center mt-10 leading-relaxed">
+          قصص المكتبة من{' '}
           <a href="https://storyweaver.org.in" target="_blank" rel="noopener noreferrer" className="underline">StoryWeaver</a>{' '}
-          (Pratham Books)، ومنشورة برخصة{' '}
-          <a href="https://creativecommons.org/licenses/by/4.0/deed.ar" target="_blank" rel="noopener noreferrer" className="underline">
-            المشاع الإبداعي نسب المصنف 4.0 (CC BY 4.0)
-          </a>
-          . حقوق كل قصة لمؤلفيها ورساميها ومترجميها المذكورين.
+          (Pratham Books) برخصة{' '}
+          <a href="https://creativecommons.org/licenses/by/4.0/deed.ar" target="_blank" rel="noopener noreferrer" className="underline">CC BY 4.0</a>.
         </p>
       </div>
     </div>
