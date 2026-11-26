@@ -2,9 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
-import { Avatar } from '@/components/ui/Avatar'
-import { Card } from '@/components/ui/Card'
-import { EmptyState } from '@/components/ui/EmptyState'
+export const dynamic = 'force-dynamic'
 
 export default async function ParentDashboard() {
   const supabase = createClient()
@@ -13,47 +11,110 @@ export default async function ParentDashboard() {
 
   const name = (user.user_metadata?.full_name as string) ?? 'الوالد'
 
-  // Fetch children profiles
   const { data: children } = await supabase
     .from('child_profiles')
-    .select('*')
+    .select('id, name, avatar_emoji, age_group, birth_year')
+    .eq('parent_id', user.id)
     .order('created_at', { ascending: true })
 
   if (!children || children.length === 0) redirect('/parent/children/add?welcome=1')
 
-  const worlds = [
-    { slug: 'letters',    icon: '🌙', label: 'الحروف',   color: 'bg-orange-100 text-orange-600' },
-    { slug: 'numbers',   icon: '🔢', label: 'الأعداد',  color: 'bg-green-100 text-green-600' },
-    { slug: 'science',   icon: '🔭', label: 'العلوم',   color: 'bg-blue-100 text-blue-600' },
-    { slug: 'languages', icon: '🌍', label: 'اللغات',   color: 'bg-purple-100 text-purple-600' },
-    { slug: 'thinking',  icon: '🧩', label: 'التفكير',  color: 'bg-pink-100 text-pink-600' },
-    { slug: 'creativity',icon: '🎨', label: 'الإبداع',  color: 'bg-yellow-100 text-yellow-600' },
-    { slug: 'knowledge', icon: '🌟', label: 'المعرفة',  color: 'bg-indigo-100 text-indigo-600' },
-  ]
+  /* جلب إحصائيات + آخر نشاط لكل طفل */
+  const childrenData = await Promise.all(
+    (children ?? []).map(async (child) => {
+      const [
+        { data: pts },
+        { count: lessons },
+        { data: lastRead },
+        { data: lastGame },
+        { data: lastLesson },
+      ] = await Promise.all([
+        supabase.from('child_points').select('total_points').eq('child_id', child.id).single(),
+        supabase.from('learning_progress').select('*', { count: 'exact', head: true }).eq('child_id', child.id).eq('status', 'completed'),
+        supabase.from('story_reads').select('read_at, story:stories(title_ar, cover_emoji)').eq('child_id', child.id).order('read_at', { ascending: false }).limit(1),
+        supabase.from('game_sessions').select('played_at, game_type, score').eq('child_id', child.id).order('played_at', { ascending: false }).limit(1),
+        supabase.from('learning_progress').select('completed_at, lesson:lessons(title_ar, subject:subjects(emoji))').eq('child_id', child.id).eq('status', 'completed').order('completed_at', { ascending: false }).limit(1),
+      ])
+
+      const GAME_NAMES: Record<string, string> = {
+        words: 'رتّب الكلمات', matching: 'المطابقة', letters: 'أين الحرف؟',
+        counting: 'عُدّ معي', math: 'حساب سريع', opposites: 'الأضداد',
+      }
+
+      /* آخر نشاط */
+      type Act = { at: string; icon: string; text: string }
+      const acts: Act[] = [
+        ...(lastRead ?? []).map((r) => {
+          const s = r.story as unknown as { title_ar: string; cover_emoji: string } | null
+          return { at: r.read_at as string, icon: s?.cover_emoji ?? '📖', text: `قرأ: ${s?.title_ar ?? ''}` }
+        }),
+        ...(lastGame ?? []).map((g) => ({
+          at: g.played_at as string,
+          icon: '🎮',
+          text: `لعب ${GAME_NAMES[g.game_type as string] ?? g.game_type} بنتيجة ${g.score}%`,
+        })),
+        ...(lastLesson ?? []).map((p) => {
+          const l = p.lesson as unknown as { title_ar: string; subject: { emoji: string } | null } | null
+          return { at: p.completed_at as string, icon: l?.subject?.emoji ?? '🎓', text: `أكمل: ${l?.title_ar ?? ''}` }
+        }),
+      ].filter((a) => a.at).sort((a, b) => b.at.localeCompare(a.at))
+
+      return {
+        id: child.id,
+        name: child.name,
+        avatar_emoji: child.avatar_emoji,
+        age: new Date().getFullYear() - (child.birth_year as number),
+        points: pts?.total_points ?? 0,
+        lessons: lessons ?? 0,
+        lastActivity: acts[0] ?? null,
+      }
+    })
+  )
+
+  const totalPoints = childrenData.reduce((s, c) => s + c.points, 0)
+  const totalLessons = childrenData.reduce((s, c) => s + c.lessons, 0)
 
   return (
-    <div className="space-y-8">
-      {/* Welcome */}
+    <div className="space-y-6" dir="rtl">
+      {/* ترحيب */}
       <div className="flex items-center gap-4">
-        <Avatar name={name} size="xl" />
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl font-black text-white shrink-0"
+          style={{background:'linear-gradient(135deg,#7c3aed,#ec4899)'}}>
+          {name.charAt(0)}
+        </div>
         <div>
-          <h1 className="text-2xl font-black text-gray-900">
-            أهلاً، {name.split(' ')[0]} 👋
-          </h1>
-          <p className="text-gray-500 text-sm mt-0.5">مرحباً بك في لوحة التحكم</p>
+          <h1 className="text-2xl font-black text-gray-900">أهلاً، {name.split(' ')[0]} 👋</h1>
+          <p className="text-gray-500 text-sm mt-0.5">تابع تقدّم أطفالك من هنا</p>
         </div>
       </div>
 
-      <section className="rounded-3xl bg-gradient-to-l from-sky-500 to-indigo-600 p-6 text-white shadow-lg">
-        <h2 className="text-2xl font-black mb-1">من سيتعلّم الآن؟</h2>
-        <p className="text-white/80 text-sm mb-5">اختر الطفل لتفتح له عالمه</p>
-        <div className="flex flex-wrap gap-4">
+      {/* إحصاء الأسرة */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'عدد الأطفال', value: childrenData.length, icon: '👧', bg: '#ede9fe', text: '#6d28d9' },
+          { label: 'مجموع النقاط', value: totalPoints, icon: '⭐', bg: '#fef9c3', text: '#854d0e' },
+          { label: 'الدروس المكتملة', value: totalLessons, icon: '🎓', bg: '#d1fae5', text: '#065f46' },
+          { label: 'أطفال نشيطون', value: childrenData.filter(c => c.lastActivity).length, icon: '🔥', bg: '#fee2e2', text: '#991b1b' },
+        ].map((s) => (
+          <div key={s.label} className="rounded-2xl p-4 text-center"
+            style={{background:s.bg,border:`1.5px solid ${s.text}22`}}>
+            <div className="text-2xl mb-1">{s.icon}</div>
+            <div className="text-2xl font-black" style={{color:s.text}}>{s.value}</div>
+            <div className="text-xs font-bold mt-0.5" style={{color:s.text+'99'}}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* اختر الطفل */}
+      <section className="rounded-3xl p-6 text-white"
+        style={{background:'linear-gradient(135deg,#7c3aed 0%,#a855f7 50%,#ec4899 100%)'}}>
+        <h2 className="text-xl font-black mb-1">من سيتعلّم الآن؟</h2>
+        <p className="text-white/70 text-sm mb-4">اضغط على اسم طفلك لفتح عالمه</p>
+        <div className="flex flex-wrap gap-3">
           {children.map((child: { id: string; name: string; avatar_emoji?: string }) => (
-            <Link
-              key={child.id}
-              href={`/kids/${child.id}`}
-              className="flex flex-col items-center gap-2 bg-white/15 hover:bg-white/25 rounded-3xl px-6 py-4 transition-all hover:scale-105"
-            >
+            <Link key={child.id} href={`/kids/${child.id}`}
+              className="flex flex-col items-center gap-2 rounded-3xl px-6 py-4 active:scale-95 transition-all"
+              style={{background:'rgba(255,255,255,0.15)'}}>
               <span className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-4xl shadow">
                 {child.avatar_emoji ?? '🧒'}
               </span>
@@ -63,98 +124,79 @@ export default async function ParentDashboard() {
         </div>
       </section>
 
-      {/* Children section */}
+      {/* بطاقات الأطفال مع آخر نشاط */}
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-black text-gray-900">أطفالي</h2>
-          <Link
-            href="/parent/children/add"
-            className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:bg-primary-light px-3 py-1.5 rounded-lg transition-all"
-          >
+          <Link href="/parent/children/add"
+            className="text-sm font-black text-purple-600 bg-purple-50 px-3 py-1.5 rounded-xl">
             + إضافة طفل
           </Link>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {childrenData.map((child) => (
+            <div key={child.id} className="bg-white rounded-3xl p-5"
+              style={{boxShadow:'0 5px 0 #ede9fe',border:'1.5px solid #ede9fe'}}>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-5xl">{child.avatar_emoji ?? '🧒'}</span>
+                <div className="flex-1">
+                  <h3 className="font-black text-lg text-gray-900">{child.name}</h3>
+                  <p className="text-sm text-gray-500">العمر: {child.age} سنوات</p>
+                </div>
+                <div className="text-right">
+                  <div className="font-black text-xl text-amber-500">⭐ {child.points}</div>
+                  <div className="text-xs text-gray-400">نقطة</div>
+                </div>
+              </div>
 
-        {!children || children.length === 0 ? (
-          <Card className="text-center py-2">
-            <EmptyState
-              icon="👶"
-              title="لا يوجد أطفال مسجّلون بعد"
-              description="أضف ملف طفلك لتبدأ في متابعة تقدّمه التعليمي"
-              action={
-                <Link
-                  href="/parent/children/add"
-                  className="inline-flex items-center justify-center font-bold px-6 py-3 rounded-xl bg-primary text-white hover:bg-primary-dark transition-all"
-                >
-                  إضافة طفل الآن
+              {/* آخر نشاط */}
+              {child.lastActivity ? (
+                <div className="rounded-2xl p-3 mb-4 flex items-center gap-3"
+                  style={{background:'#f5f3ff'}}>
+                  <span className="text-2xl">{child.lastActivity.icon}</span>
+                  <span className="flex-1 text-sm font-bold text-purple-800 truncate">{child.lastActivity.text}</span>
+                  <span className="text-[11px] text-purple-400 shrink-0">
+                    {new Date(child.lastActivity.at).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+              ) : (
+                <div className="rounded-2xl p-3 mb-4 text-center bg-gray-50">
+                  <p className="text-sm text-gray-400">لم يبدأ بعد</p>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Link href={`/kids/${child.id}`}
+                  className="flex-1 text-center text-white font-black py-2 rounded-2xl text-sm"
+                  style={{background:'#7c3aed',boxShadow:'0 3px 0 #5b21b6'}}>
+                  تعلّم
                 </Link>
-              }
-            />
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {children.map((child: { id: string; name: string; birth_year: number; avatar_emoji?: string; emoji?: string }) => (
-              <div key={child.id} className="space-y-2">
-                <Link href={`/kids/${child.id}`}>
-                  <Card variant="interactive" className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-primary-light flex items-center justify-center text-2xl">
-                      {child.emoji ?? child.avatar_emoji ?? '🧒'}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-gray-900">{child.name}</p>
-                      <p className="text-sm text-gray-500">مواليد {child.birth_year}</p>
-                    </div>
-                    <span className="text-xs text-primary font-semibold">تعلّم →</span>
-                  </Card>
-                </Link>
-                <Link
-                  href={`/parent/children/${child.id}/progress`}
-                  className="block text-center text-xs text-gray-400 hover:text-primary"
-                >
-                  عرض تقدم {child.name} →
+                <Link href={`/parent/children/${child.id}/progress`}
+                  className="flex-1 text-center font-black py-2 rounded-2xl text-sm text-purple-700"
+                  style={{background:'#ede9fe',boxShadow:'0 3px 0 #ddd6fe'}}>
+                  📊 تقدّمه
                 </Link>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Quick Links */}
-      <section>
-        <h2 className="text-xl font-black text-gray-900 mb-4">الأدوات</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {[
-            { href: '/parent/dashboard', icon: '📊', label: 'لوحة المتابعة', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-            { href: '/stories', icon: '📚', label: 'مكتبة القصص', color: 'bg-purple-50 text-purple-700 border-purple-200' },
-            { href: '/library', icon: '🌍', label: 'المكتبة المفتوحة', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-            { href: '/games/matching', icon: '🎮', label: 'ألعاب تعليمية', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 p-4 rounded-xl border font-semibold text-sm hover:opacity-80 transition-opacity ${item.color}`}
-            >
-              <span className="text-2xl">{item.icon}</span>
-              {item.label}
-            </Link>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* Worlds quick access */}
+      {/* روابط سريعة */}
       <section>
-        <h2 className="text-xl font-black text-gray-900 mb-4">عوالم سَلِيم</h2>
-        <div className="grid grid-cols-4 md:grid-cols-7 gap-3">
-          {worlds.map((w) => (
-            <Link
-              key={w.slug}
-              href={`/worlds/${w.slug}`}
-              className="flex flex-col items-center gap-2 p-3 rounded-2xl hover:bg-gray-100 transition-colors group"
-            >
-              <div className={`w-12 h-12 rounded-xl ${w.color} flex items-center justify-center text-2xl group-hover:scale-110 transition-transform`}>
-                {w.icon}
-              </div>
-              <span className="text-xs font-semibold text-gray-600 text-center leading-tight">{w.label}</span>
+        <h2 className="text-xl font-black text-gray-900 mb-3">روابط سريعة</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { href: '/library', icon: '🌍', label: 'المكتبة المفتوحة', bg: '#d1fae5', text: '#065f46' },
+            { href: '/stories', icon: '📚', label: 'قصص سَلِيم', bg: '#ede9fe', text: '#6d28d9' },
+            { href: '/games', icon: '🎮', label: 'الألعاب', bg: '#fef9c3', text: '#854d0e' },
+            { href: '/parent/dashboard', icon: '📊', label: 'تقرير مفصّل', bg: '#fee2e2', text: '#991b1b' },
+          ].map((item) => (
+            <Link key={item.href} href={item.href}
+              className="flex items-center gap-3 p-4 rounded-2xl font-black text-sm transition-opacity hover:opacity-80"
+              style={{background:item.bg,color:item.text}}>
+              <span className="text-2xl">{item.icon}</span>
+              {item.label}
             </Link>
           ))}
         </div>
