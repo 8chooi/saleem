@@ -457,10 +457,6 @@ export default function LibraryReader({
                 {autoAdvance ? '⏹ إيقاف التلقائي' : '▶▶ قراءة تلقائية'}
               </button>
             </>
-          ) : !ttsSupported || !arabicVoice ? (
-            <span className="text-white/40 text-xs text-center px-2">
-              🔇 جهازك لا يدعم قراءة اللغة العربية
-            </span>
           ) : null}
         </div>
       )}
