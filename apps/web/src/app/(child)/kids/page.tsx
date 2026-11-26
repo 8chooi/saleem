@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import SaleemMascot from '@/components/mascot/SaleemMascot'
 
 interface Child {
   id: string
@@ -94,7 +95,9 @@ export default function KidsSelectPage() {
       {!selected ? (
         /* ───── اختر الطفل ───── */
         <div className="w-full max-w-sm text-center">
-          <div className="text-6xl mb-2">🌟</div>
+          <div className="flex justify-center mb-2">
+            <SaleemMascot size={110} expression="excited" animate />
+          </div>
           <h1 className="text-white text-3xl font-black mb-1">مرحباً!</h1>
           <p className="text-white/70 text-base mb-8">من سيتعلّم اليوم؟</p>
 

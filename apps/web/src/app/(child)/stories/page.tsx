@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { LEVELS, levelInfo } from '@/lib/stories/pages'
+import ChildPageHeader from '@/components/layout/ChildPageHeader'
 
 interface Story {
   id: string
@@ -113,19 +114,12 @@ export default async function StoriesPage({
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(160deg,#f5f0ff 0%,#fdf4ff 40%,#f0f9ff 100%)' }} dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between gap-3"
-        style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', boxShadow: '0 2px 20px rgba(124,58,237,0.1)' }}>
-        <Link
-          href={selectedChildId ? `/kids/${selectedChildId}` : '/parent'}
-          className="text-purple-600 font-black text-sm px-3 py-2 rounded-xl"
-          style={{ background: 'rgba(124,58,237,0.1)' }}>
-          ← رجوع
-        </Link>
-        <h1 className="text-lg font-black text-purple-900">📚 مكتبة القصص</h1>
-        <span className="text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-xl">
-          {(allStories || []).length} قصة
-        </span>
-      </div>
+      <ChildPageHeader
+        backHref={selectedChildId ? `/kids/${selectedChildId}` : '/parent'}
+        title="📚 مكتبة القصص"
+        count={(allStories || []).length}
+        countLabel="قصة"
+      />
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Child Selector */}
