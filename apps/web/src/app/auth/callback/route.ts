@@ -10,7 +10,9 @@ export async function GET(request: Request) {
     const supabase = createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      // منع Open Redirect: السماح فقط بالمسارات الداخلية
+      const safeNext = next.startsWith('/') && !next.includes('://') ? next : '/parent'
+      return NextResponse.redirect(`${origin}${safeNext}`)
     }
   }
 

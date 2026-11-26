@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import NetInfo from '@react-native-community/netinfo'
 import { useEffect } from 'react'
 
-// ← غيّر هذا للرابط الحقيقي بعد النشر على Cloudflare Pages
+// الموقع المنشور على Vercel — تأكد أن saleem.8ch.app يشير لـ Vercel
 const SITE_URL = 'https://saleem.8ch.app'
 
 export default function MainScreen() {

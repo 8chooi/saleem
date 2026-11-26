@@ -25,32 +25,31 @@ export default async function ParentDashboard() {
     .eq('parent_id', user.id)
     .order('created_at')
 
-  const childrenData: ChildProgress[] = []
-
-  for (const child of children || []) {
-    const [
-      { data: points },
-      { count: completedLessons },
-      { count: readStories },
-      { count: badgesCount },
-    ] = await Promise.all([
-      supabase.from('child_points').select('total_points').eq('child_id', child.id).single(),
-      supabase.from('learning_progress').select('*', { count: 'exact', head: true }).eq('child_id', child.id).eq('status', 'completed'),
-      supabase.from('story_reads').select('*', { count: 'exact', head: true }).eq('child_id', child.id),
-      supabase.from('child_badges').select('*', { count: 'exact', head: true }).eq('child_id', child.id),
-    ])
-
-    childrenData.push({
-      id: child.id,
-      name: child.name,
-      avatar_emoji: child.avatar_emoji,
-      age: new Date().getFullYear() - child.birth_year,
-      total_points: points?.total_points || 0,
-      completed_lessons: completedLessons || 0,
-      read_stories: readStories || 0,
-      badges_count: badgesCount || 0,
+  const childrenData: ChildProgress[] = await Promise.all(
+    (children || []).map(async (child) => {
+      const [
+        { data: points },
+        { count: completedLessons },
+        { count: readStories },
+        { count: badgesCount },
+      ] = await Promise.all([
+        supabase.from('child_points').select('total_points').eq('child_id', child.id).single(),
+        supabase.from('learning_progress').select('*', { count: 'exact', head: true }).eq('child_id', child.id).eq('status', 'completed'),
+        supabase.from('story_reads').select('*', { count: 'exact', head: true }).eq('child_id', child.id),
+        supabase.from('child_badges').select('*', { count: 'exact', head: true }).eq('child_id', child.id),
+      ])
+      return {
+        id: child.id,
+        name: child.name,
+        avatar_emoji: child.avatar_emoji,
+        age: new Date().getFullYear() - child.birth_year,
+        total_points: points?.total_points || 0,
+        completed_lessons: completedLessons || 0,
+        read_stories: readStories || 0,
+        badges_count: badgesCount || 0,
+      }
     })
-  }
+  )
 
   const totalPoints = childrenData.reduce((s, c) => s + c.total_points, 0)
   const totalLessons = childrenData.reduce((s, c) => s + c.completed_lessons, 0)
