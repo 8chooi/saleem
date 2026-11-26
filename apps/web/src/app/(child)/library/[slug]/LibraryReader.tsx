@@ -22,6 +22,19 @@ interface Book {
   pages: Page[] | null
 }
 
+// تنظيف نص الصفحة من كود JavaScript المضمّن (من StoryWeaver)
+function cleanPageText(raw: string): string {
+  if (!raw) return ''
+  return raw
+    .replace(/ready\s*\(\s*function[\s\S]*$/i, '')
+    .replace(/\$\s*\(\s*document\s*\)[\s\S]*$/i, '')
+    .replace(/var\s+\w+\s*=\s*new\s+\w+[\s\S]*$/i, '')
+    .replace(/<[^>]+>/g, '')           // strip any HTML tags
+    .replace(/https?:\/\/\S+/g, '')    // strip URLs
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
 function creditLine(credits: string[]) {
   if (credits.length >= 3)
     return `تأليف: ${credits[0]} · رسم: ${credits[1]} · ترجمة: ${credits[2]}`
@@ -219,6 +232,8 @@ export default function LibraryReader({
 
   const isLandscape = book.orientation !== 'portrait'
   const page = current === 0 ? null : storyPages[current - 1]
+  const nextPage = current > 0 && current < totalPages ? storyPages[current] : null
+  const pageText = page ? cleanPageText(page.text) : ''
 
   return (
     <div
@@ -284,17 +299,23 @@ export default function LibraryReader({
               <img src={page.img} alt={`صفحة ${current}`}
                 className="w-full rounded-3xl shadow-2xl"
                 style={{boxShadow:'0 20px 60px rgba(0,0,0,0.5)'}}
-                loading="lazy" />
+                loading="eager" />
             ) : (
               <div className="w-full aspect-[4/3] rounded-3xl bg-white/10 flex items-center justify-center">
                 <span className="text-6xl">🖼</span>
               </div>
             )}
-            {page.text && (
+            {/* preload next page image */}
+            {nextPage?.img && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={nextPage.img} alt="" aria-hidden className="hidden" loading="eager" />
+            )}
+
+            {pageText && (
               <div className="mt-4 rounded-2xl p-5"
                 style={{background:'rgba(255,255,255,0.12)',backdropFilter:'blur(8px)'}}>
-                <p className="text-white text-xl font-bold text-center leading-relaxed">{page.text}</p>
-                <button onClick={() => readAloud(page.text)}
+                <p className="text-white text-xl font-bold text-center leading-relaxed">{pageText}</p>
+                <button onClick={() => readAloud(pageText)}
                   className="block mx-auto mt-3 text-white/60 hover:text-white/90 transition-colors text-sm font-bold"
                   aria-label="استمع للنص">
                   🔊 استمع
