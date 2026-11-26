@@ -110,9 +110,8 @@ export default function LibraryReader({
             <div className="mt-4 bg-gray-800 rounded-xl p-4 text-center">
               <p className="text-white text-lg font-black mb-2">{book.title}</p>
               {book.credits.length > 0 && (
-                <p className="text-gray-300 text-sm">{creditLine(book.credits)}</p>
+                <p className="text-gray-600 text-[10px] mt-3 leading-relaxed">{creditLine(book.credits)} · CC BY 4.0 · Pratham Books</p>
               )}
-              <p className="text-gray-500 text-xs mt-2">CC BY 4.0 · Pratham Books</p>
             </div>
             {!hasPages && (
               <div className="mt-4 bg-gray-800/60 rounded-xl p-4 text-center">
