@@ -129,9 +129,9 @@ export default async function KidHomePage({ params }: { params: { childId: strin
       band={band}
       q={q}
       activities={activities}
-      tasks={(tasks ?? []) as Parameters<typeof KidDashboard>[0]['tasks']}
-      picked={(picked as Parameters<typeof KidDashboard>[0]['picked'])}
-      badges={(badges ?? []) as Parameters<typeof KidDashboard>[0]['badges']}
+      tasks={(tasks ?? []) as unknown as Parameters<typeof KidDashboard>[0]['tasks']}
+      picked={(picked as unknown as Parameters<typeof KidDashboard>[0]['picked'])}
+      badges={(badges ?? []) as unknown as Parameters<typeof KidDashboard>[0]['badges']}
       worlds={Array.from(worldsMap.values())}
       continueLesson={continueLesson ?? null}
       challenge={challenge ?? null}
