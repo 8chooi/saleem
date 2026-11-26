@@ -152,7 +152,7 @@ export default function KidDashboard(p: DashboardProps) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-white/70 text-xs font-bold">أهلاً يا</p>
-          <p className="text-white text-2xl font-black leading-tight truncate">{p.child.name} 👋</p>
+          <p className="text-white text-xl font-black leading-tight truncate">{p.child.name} 👋</p>
           <p className="text-white/60 text-xs mt-0.5">{young ? 'هيّا نلعب ونتعلّم!' : 'ماذا تريد اليوم؟'}</p>
         </div>
         {/* نقاط */}
@@ -170,7 +170,7 @@ export default function KidDashboard(p: DashboardProps) {
   const ActivitiesGrid = (
     <section>
       <h2 className="text-lg font-black text-gray-800 mb-3">أنشطتي</h2>
-      <div className={`grid gap-3 ${young ? 'grid-cols-2' : 'grid-cols-3'}`}>
+      <div className={`grid gap-3 ${young ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}>
         {(young ? p.activities.slice(0,4) : p.activities).map(a=>(
           <ClayBtn key={a.label} href={a.href} color={a.color} shadow={a.shadow}
             icon={a.icon} label={a.label} big={young} />

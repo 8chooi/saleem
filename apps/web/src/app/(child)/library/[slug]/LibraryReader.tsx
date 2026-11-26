@@ -128,7 +128,7 @@ export default function LibraryReader({
           style={{background:'rgba(255,255,255,0.12)'}}>
           ← رجوع
         </Link>
-        <h1 className="text-white font-black text-base truncate max-w-[180px]">{book.title}</h1>
+        <h1 className="text-white font-black text-base truncate flex-1 text-center px-2">{book.title}</h1>
         <span className="text-white/60 text-xs font-bold bg-white/10 px-3 py-1.5 rounded-xl">
           {current === 0 ? 'الغلاف' : `${current} / ${totalPages}`}
         </span>
@@ -198,10 +198,10 @@ export default function LibraryReader({
       </div>
 
       {/* Controls */}
-      <div className="px-4 py-3 flex items-center justify-between gap-3"
+      <div className="px-3 py-3 flex items-center justify-between gap-2"
         style={{background:'rgba(255,255,255,0.08)',backdropFilter:'blur(10px)'}}>
         <button onClick={goPrev} disabled={current === 0}
-          className="text-white font-black px-5 py-3 rounded-2xl disabled:opacity-30 active:scale-95 transition-all"
+          className="text-white font-black px-4 py-3 rounded-2xl disabled:opacity-30 active:scale-95 transition-all text-sm shrink-0"
           style={{background:'rgba(255,255,255,0.15)',boxShadow: current > 0 ? '0 4px 0 rgba(0,0,0,0.3)' : 'none'}}>
           ← سابق
         </button>
@@ -210,15 +210,15 @@ export default function LibraryReader({
           <>
             <audio ref={audioRef} src={book.audio_url} onEnded={() => setPlaying(false)} className="hidden" />
             <button onClick={toggleAudio}
-              className="text-white font-black px-5 py-3 rounded-2xl active:scale-95 transition-all text-sm"
+              className="text-white font-black px-3 py-3 rounded-2xl active:scale-95 transition-all text-xs flex-1 max-w-[140px]"
               style={{background:'rgba(99,102,241,0.6)',boxShadow:'0 4px 0 rgba(0,0,0,0.3)'}}>
-              {playing ? '⏸ إيقاف' : '▶ القصة بصوت'}
+              {playing ? '⏸ إيقاف' : '▶ صوت'}
             </button>
           </>
         )}
 
         <button onClick={goNext} disabled={current >= totalPages || !hasPages}
-          className="text-white font-black px-5 py-3 rounded-2xl disabled:opacity-30 active:scale-95 transition-all"
+          className="text-white font-black px-4 py-3 rounded-2xl disabled:opacity-30 active:scale-95 transition-all text-sm shrink-0"
           style={{background:'rgba(255,255,255,0.15)',boxShadow: current < totalPages && hasPages ? '0 4px 0 rgba(0,0,0,0.3)' : 'none'}}>
           تالي →
         </button>

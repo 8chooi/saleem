@@ -88,7 +88,7 @@ export default async function OpenLibraryPage({
           <input name="q" defaultValue={q} placeholder="🔍 ابحث عن قصة..."
             className="flex-1 rounded-2xl border-2 border-purple-100 px-4 py-3 bg-white font-bold text-gray-800 focus:outline-none focus:border-purple-400"
           />
-          <button className="text-white font-black px-5 rounded-2xl"
+          <button className="text-white font-black px-5 rounded-2xl shrink-0"
             style={{background:'#7c3aed',boxShadow:'0 4px 0 #5b21b6'}}>
             بحث
           </button>

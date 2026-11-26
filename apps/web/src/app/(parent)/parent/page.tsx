@@ -110,15 +110,15 @@ export default async function ParentDashboard() {
         style={{background:'linear-gradient(135deg,#7c3aed 0%,#a855f7 50%,#ec4899 100%)'}}>
         <h2 className="text-xl font-black mb-1">من سيتعلّم الآن؟</h2>
         <p className="text-white/70 text-sm mb-4">اضغط على اسم طفلك لفتح عالمه</p>
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-3">
           {children.map((child: { id: string; name: string; avatar_emoji?: string }) => (
             <Link key={child.id} href={`/kids/${child.id}`}
-              className="flex flex-col items-center gap-2 rounded-3xl px-6 py-4 active:scale-95 transition-all"
+              className="flex flex-col items-center gap-2 rounded-3xl px-4 py-4 active:scale-95 transition-all min-w-0"
               style={{background:'rgba(255,255,255,0.15)'}}>
-              <span className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-4xl shadow">
+              <span className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-3xl shadow shrink-0">
                 {child.avatar_emoji ?? '🧒'}
               </span>
-              <span className="font-black">{child.name}</span>
+              <span className="font-black text-sm text-center truncate w-full">{child.name}</span>
             </Link>
           ))}
         </div>
