@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 
 interface Page {
@@ -101,6 +101,17 @@ export default function LibraryReader({
   const vttCues = useRef<VttCue[]>([])
   const syncActive = useRef(false)
 
+  // TTS state
+  const [ttsPlaying, setTtsPlaying] = useState(false)
+  const [autoAdvance, setAutoAdvance] = useState(false)
+  const [arabicVoice, setArabicVoice] = useState<SpeechSynthesisVoice | null>(null)
+  const [ttsSupported, setTtsSupported] = useState(true)
+  const autoAdvanceRef = useRef(false)
+
+  const page = useMemo(() => current === 0 ? null : storyPages[current - 1], [current, storyPages])
+  const nextPage = useMemo(() => current > 0 && current < totalPages ? storyPages[current] : null, [current, storyPages, totalPages])
+  const pageText = useMemo(() => page ? cleanPageText(page.text) : '', [page])
+
   // Load VTT for sync
   useEffect(() => {
     if (!book.vtt_url) return
@@ -110,6 +121,21 @@ export default function LibraryReader({
       .catch(() => {})
   }, [book.vtt_url])
 
+  // Detect Arabic voice for TTS
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) { setTtsSupported(false); return }
+    const pickVoice = () => {
+      const voices = window.speechSynthesis.getVoices()
+      const ar = voices.find(v => v.lang.toLowerCase().startsWith('ar') && v.localService)
+        ?? voices.find(v => v.lang.toLowerCase().startsWith('ar'))
+      setArabicVoice(ar ?? null)
+      if (voices.length > 0 && !ar) setTtsSupported(false)
+    }
+    pickVoice()
+    window.speechSynthesis.addEventListener('voiceschanged', pickVoice)
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', pickVoice)
+  }, [])
+
   // Stop audio on unmount
   useEffect(() => {
     return () => {
@@ -118,6 +144,7 @@ export default function LibraryReader({
         audioRef.current.src = ''
       }
       window.speechSynthesis?.cancel()
+      setTtsPlaying(false)
     }
   }, [])
 
@@ -136,15 +163,85 @@ export default function LibraryReader({
     }
   }, [totalPages])
 
-  function readAloud(text: string) {
-    if (!text || !('speechSynthesis' in window)) return
+  const ttsRead = useCallback((text: string, onDone?: () => void) => {
+    if (!text || !arabicVoice || !('speechSynthesis' in window)) return
     window.speechSynthesis.cancel()
-    const v = window.speechSynthesis.getVoices().find(x => x.lang.toLowerCase().startsWith('ar'))
-    if (!v) return
     const u = new SpeechSynthesisUtterance(text)
-    u.voice = v; u.lang = v.lang; u.rate = 0.85
+    u.voice = arabicVoice
+    u.lang = arabicVoice.lang
+    u.rate = 0.85
+    u.onstart = () => setTtsPlaying(true)
+    u.onend = () => { setTtsPlaying(false); onDone?.() }
+    u.onerror = () => setTtsPlaying(false)
+    setTtsPlaying(true)
     window.speechSynthesis.speak(u)
-  }
+  }, [arabicVoice])
+
+  const stopTts = useCallback(() => {
+    autoAdvanceRef.current = false
+    setAutoAdvance(false)
+    window.speechSynthesis?.cancel()
+    setTtsPlaying(false)
+  }, [])
+
+  // Auto-advance: use a ref-based loop to avoid stale closure on recursive callback
+  const autoPageRef = useRef(0)
+
+  const readPageAndAdvance = useCallback((idx: number) => {
+    if (!autoAdvanceRef.current) return
+    const p = storyPages[idx]
+    if (!p) { autoAdvanceRef.current = false; setAutoAdvance(false); return }
+    autoPageRef.current = idx
+    setCurrent(idx + 1)
+    const text = cleanPageText(p.text)
+    if (!text) {
+      setTimeout(() => {
+        if (autoAdvanceRef.current) readPageAndAdvance(idx + 1)
+      }, 1500)
+      return
+    }
+    if (!arabicVoice || !('speechSynthesis' in window)) return
+    window.speechSynthesis.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    u.voice = arabicVoice
+    u.lang = arabicVoice.lang
+    u.rate = 0.85
+    u.onstart = () => setTtsPlaying(true)
+    u.onend = () => {
+      setTtsPlaying(false)
+      if (!autoAdvanceRef.current) return
+      const next = idx + 1
+      if (next < storyPages.length) {
+        setTimeout(() => { if (autoAdvanceRef.current) readPageAndAdvance(next) }, 700)
+      } else {
+        autoAdvanceRef.current = false
+        setAutoAdvance(false)
+      }
+    }
+    u.onerror = () => { setTtsPlaying(false) }
+    setTtsPlaying(true)
+    window.speechSynthesis.speak(u)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arabicVoice, storyPages])
+
+  const toggleAutoAdvance = useCallback(() => {
+    if (autoAdvance) {
+      stopTts()
+    } else {
+      const idx = current > 0 ? current - 1 : 0
+      autoAdvanceRef.current = true
+      setAutoAdvance(true)
+      readPageAndAdvance(idx)
+    }
+  }, [autoAdvance, current, readPageAndAdvance, stopTts])
+
+  const toggleTts = useCallback(() => {
+    if (ttsPlaying) {
+      stopTts()
+    } else if (pageText && arabicVoice) {
+      ttsRead(pageText)
+    }
+  }, [ttsPlaying, pageText, arabicVoice, ttsRead, stopTts])
 
   function toggleAudio() {
     if (!audioRef.current) return
@@ -231,9 +328,6 @@ export default function LibraryReader({
   }
 
   const isLandscape = book.orientation !== 'portrait'
-  const page = current === 0 ? null : storyPages[current - 1]
-  const nextPage = current > 0 && current < totalPages ? storyPages[current] : null
-  const pageText = page ? cleanPageText(page.text) : ''
 
   return (
     <div
@@ -315,16 +409,61 @@ export default function LibraryReader({
               <div className="mt-4 rounded-2xl p-5"
                 style={{background:'rgba(255,255,255,0.12)',backdropFilter:'blur(8px)'}}>
                 <p className="text-white text-xl font-bold text-center leading-relaxed">{pageText}</p>
-                <button onClick={() => readAloud(pageText)}
-                  className="block mx-auto mt-3 text-white/60 hover:text-white/90 transition-colors text-sm font-bold"
-                  aria-label="استمع للنص">
-                  🔊 استمع
-                </button>
               </div>
             )}
           </div>
         )}
       </div>
+
+      {/* Audio controls bar */}
+      {current > 0 && (
+        <div className="px-3 pt-3 pb-1 flex items-center gap-2 justify-center flex-wrap"
+          style={{background:'rgba(255,255,255,0.05)'}}>
+          {book.audio_url ? (
+            <>
+              <audio
+                ref={audioRef}
+                src={book.audio_url}
+                onEnded={() => { setPlaying(false); syncActive.current = false }}
+                onTimeUpdate={onTimeUpdate}
+                onError={() => { setPlaying(false); setAudioError(true); syncActive.current = false }}
+                className="hidden"
+              />
+              <button onClick={toggleAudio}
+                className="flex items-center gap-2 text-white font-black px-5 py-2.5 rounded-2xl active:scale-95 transition-all text-sm"
+                style={{
+                  background: audioError ? 'rgba(239,68,68,0.5)' : playing ? 'rgba(16,185,129,0.6)' : 'rgba(99,102,241,0.7)',
+                  boxShadow:'0 4px 0 rgba(0,0,0,0.3)'
+                }}>
+                {audioError ? '⚠ خطأ في الصوت' : playing ? '⏸ كتم' : '▶ تشغيل الصوت'}
+              </button>
+            </>
+          ) : ttsSupported && arabicVoice && pageText ? (
+            <>
+              <button onClick={toggleTts}
+                className="flex items-center gap-2 text-white font-black px-4 py-2.5 rounded-2xl active:scale-95 transition-all text-sm"
+                style={{
+                  background: ttsPlaying && !autoAdvance ? 'rgba(16,185,129,0.6)' : 'rgba(99,102,241,0.7)',
+                  boxShadow:'0 4px 0 rgba(0,0,0,0.3)'
+                }}>
+                {ttsPlaying && !autoAdvance ? '⏸ كتم' : '🔊 اقرأ'}
+              </button>
+              <button onClick={toggleAutoAdvance}
+                className="flex items-center gap-2 text-white font-black px-4 py-2.5 rounded-2xl active:scale-95 transition-all text-sm"
+                style={{
+                  background: autoAdvance ? 'rgba(245,158,11,0.7)' : 'rgba(255,255,255,0.12)',
+                  boxShadow:'0 4px 0 rgba(0,0,0,0.3)'
+                }}>
+                {autoAdvance ? '⏹ إيقاف التلقائي' : '▶▶ قراءة تلقائية'}
+              </button>
+            </>
+          ) : !ttsSupported || !arabicVoice ? (
+            <span className="text-white/40 text-xs text-center px-2">
+              🔇 جهازك لا يدعم قراءة اللغة العربية
+            </span>
+          ) : null}
+        </div>
+      )}
 
       {/* Controls */}
       <div className="px-3 py-3 flex items-center justify-between gap-2"
@@ -334,27 +473,6 @@ export default function LibraryReader({
           style={{background:'rgba(255,255,255,0.15)',boxShadow: current > 0 ? '0 4px 0 rgba(0,0,0,0.3)' : 'none'}}>
           ← سابق
         </button>
-
-        {book.audio_url && (
-          <>
-            <audio
-              ref={audioRef}
-              src={book.audio_url}
-              onEnded={() => { setPlaying(false); syncActive.current = false }}
-              onTimeUpdate={onTimeUpdate}
-              onError={() => { setPlaying(false); setAudioError(true); syncActive.current = false }}
-              className="hidden"
-            />
-            <button onClick={toggleAudio}
-              className="text-white font-black px-3 py-3 rounded-2xl active:scale-95 transition-all text-xs flex-1 max-w-[140px]"
-              style={{
-                background: audioError ? 'rgba(239,68,68,0.5)' : playing ? 'rgba(16,185,129,0.6)' : 'rgba(99,102,241,0.6)',
-                boxShadow:'0 4px 0 rgba(0,0,0,0.3)'
-              }}>
-              {audioError ? '⚠ خطأ' : playing ? '⏸ إيقاف' : '▶ صوت'}
-            </button>
-          </>
-        )}
 
         <button onClick={goNextWithSeek} disabled={current >= totalPages || !hasPages}
           className="text-white font-black px-4 py-3 rounded-2xl disabled:opacity-30 active:scale-95 transition-all text-sm shrink-0"
