@@ -107,10 +107,11 @@ export default async function OpenLibraryPage({
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {books.map((b: Book) => {
-              const source = `https://storyweaver.org.in/ar/stories/${b.sw_id}-${b.slug}`
+              const readerHref = `/library/${b.slug}${searchParams.child ? `?child=${searchParams.child}` : ''}`
+              const swSource = `https://storyweaver.org.in/en/stories/${b.sw_id}-${b.slug}`
               return (
                 <div key={b.sw_id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-                  <a href={source} target="_blank" rel="noopener noreferrer" className="block aspect-square bg-emerald-50">
+                  <a href={readerHref} className="block aspect-square bg-emerald-50">
                     {b.cover_path ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={COVER(b.cover_path)} alt={b.title} loading="lazy" className="w-full h-full object-cover" />
@@ -130,15 +131,13 @@ export default async function OpenLibraryPage({
                     </p>
                     <div className="mt-auto flex gap-2 pt-1">
                       <a
-                        href={source}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={readerHref}
                         className="flex-1 text-center bg-emerald-600 text-white text-sm font-bold py-2 rounded-xl"
                       >
                         اقرأ
                       </a>
                       <a
-                        href={source}
+                        href={swSource}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 text-center border border-emerald-300 text-emerald-700 text-sm font-bold py-2 rounded-xl"
